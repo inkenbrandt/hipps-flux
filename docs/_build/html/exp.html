@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flux Footprints: Key Concepts &mdash; fluxfootprint 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=92734c54"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Outline of Flux Measurement Footprint Estimation Approaches" href="modeltypes.html" />
+    <link rel="prev" title="fluxfootprints" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            fluxfootprint
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="fluxfootprints.html">fluxfootprints package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">fluxfootprints</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Flux Footprints: Key Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-a-flux-footprint-and-how-is-it-represented-mathematically">What is a flux footprint and how is it represented mathematically?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-are-footprint-values-calculated-in-modelling">How are footprint values calculated in modelling?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-meteorological-parameters-are-crucial-for-footprint-prediction-models">What meteorological parameters are crucial for footprint prediction models?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-does-atmospheric-stability-affect-the-footprint">How does atmospheric stability affect the footprint?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modeltypes.html">Outline of Flux Measurement Footprint Estimation Approaches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/footprint.html">Quick-start notebook</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fluxfootprint</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Flux Footprints: Key Concepts</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/exp.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="flux-footprints-key-concepts">
+<h1>Flux Footprints: Key Concepts<a class="headerlink" href="#flux-footprints-key-concepts" title="Link to this heading"></a></h1>
+<section id="what-is-a-flux-footprint-and-how-is-it-represented-mathematically">
+<h2>What is a flux footprint and how is it represented mathematically?<a class="headerlink" href="#what-is-a-flux-footprint-and-how-is-it-represented-mathematically" title="Link to this heading"></a></h2>
+<p>A <strong>flux footprint</strong> is the up-wind surface area that contributes to the flux
+measured at a given sensor position.  In two dimensions it is described by a
+source-weighting density <span class="math notranslate nohighlight">\(f(x, y, z_m)\)</span> that varies with stream-wise
+distance <strong>x</strong>, cross-wind distance <strong>y</strong>, and measurement height <span class="math notranslate nohighlight">\(z_m\)</span>.</p>
+<p>A common representation splits the footprint into a <strong>cross‑wind–integrated
+component</strong> <span class="math notranslate nohighlight">\(f_y(x, z_m)\)</span> and a <strong>cross‑wind distribution</strong>
+<span class="math notranslate nohighlight">\(D_y(x, y)\)</span>.</p>
+<p>The cross‑wind–integrated footprint is obtained by integrating the
+two‑dimensional footprint over the <strong>y</strong>‑direction:</p>
+<div class="math notranslate nohighlight">
+\[f_y(x, z_m\bigr) = \int_{-\infty}^{+\infty} f\bigl(x, y, z_m\bigr)\mathrm{d}y\]</div>
+<p>where:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(f(x, y, z_m)\)</span> is the two‑dimensional footprint density (m <sup>–2</sup>),</p></li>
+<li><p><span class="math notranslate nohighlight">\(x\)</span> is the along‑wind distance from the sensor (m),</p></li>
+<li><p><span class="math notranslate nohighlight">\(y\)</span> is the cross‑wind distance (m), and</p></li>
+<li><p><span class="math notranslate nohighlight">\(z_m\)</span> is the measurement height (m).</p></li>
+</ul>
+</section>
+<section id="how-are-footprint-values-calculated-in-modelling">
+<h2>How are footprint values calculated in modelling?<a class="headerlink" href="#how-are-footprint-values-calculated-in-modelling" title="Link to this heading"></a></h2>
+<p>Several numerical approaches exist.  In <strong>Lagrangian stochastic models</strong> a
+large ensemble of virtual particles is released at the sensor height and
+followed backwards in time until they reach the surface.
+The footprint value assigned to a surface element is proportional to the
+number of particle “touch-downs” within that element—optionally weighted by the
+particles’ properties (e.g. vertical velocity).</p>
+<p>Two common implementations are:</p>
+<p>1. <strong>Grid‑counting</strong>
+The up-wind area is discretised into grid cells; all touchdown events in a
+cell are counted and normalised to give the footprint density on that cell.</p>
+<p>2. <strong>Kernel density estimation (KDE)</strong>
+Touchdown locations are treated as sample points of an unknown probability
+density.  A kernel function (e.g. Gaussian, bi‑weight) is centred on each
+touchdown and the kernels are summed to form a smooth, continuous footprint
+field.</p>
+</section>
+<section id="what-meteorological-parameters-are-crucial-for-footprint-prediction-models">
+<h2>What meteorological parameters are crucial for footprint prediction models?<a class="headerlink" href="#what-meteorological-parameters-are-crucial-for-footprint-prediction-models" title="Link to this heading"></a></h2>
+<p>The following variables exert primary control on footprint size, shape and
+location:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(z_m\)</span> — measurement height</p></li>
+<li><p><span class="math notranslate nohighlight">\(z_0\)</span> — aerodynamic roughness length</p></li>
+<li><p><span class="math notranslate nohighlight">\(u_{\text{mean}}\)</span> — mean wind speed at <span class="math notranslate nohighlight">\(z_m\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(h\)</span> — boundary‑layer height</p></li>
+<li><p><span class="math notranslate nohighlight">\(L\)</span> — Obukhov length (stability)</p></li>
+<li><p><span class="math notranslate nohighlight">\(\sigma_v\)</span> — standard deviation of lateral velocity fluctuations</p></li>
+<li><p><span class="math notranslate nohighlight">\(u_*\)</span> — friction velocity</p></li>
+</ul>
+<p>Three non‑dimensional groups appear repeatedly:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(z_m/L\)</span> (stability),</p></li>
+<li><p><span class="math notranslate nohighlight">\(z_m/h\)</span> (relative sensor height),</p></li>
+<li><p>the wind‑speed profile <span class="math notranslate nohighlight">\(u(z)\)</span>.</p></li>
+</ul>
+</section>
+<section id="how-does-atmospheric-stability-affect-the-footprint">
+<h2>How does atmospheric stability affect the footprint?<a class="headerlink" href="#how-does-atmospheric-stability-affect-the-footprint" title="Link to this heading"></a></h2>
+<p>Atmospheric stability modulates turbulent mixing and therefore alters both the
+extent and the peak position of the footprint:</p>
+<ul class="simple">
+<li><p><strong>Unstable / convective</strong> (<span class="math notranslate nohighlight">\(L &lt; 0\)</span>)
+Strong vertical mixing broadens the footprint and shifts its peak <strong>closer</strong>
+to the sensor, while the tail extends further down‑wind.</p></li>
+<li><p><strong>Neutral</strong> (<span class="math notranslate nohighlight">\(|L| \to \infty\)</span>)
+Footprint size and shape lie between unstable and stable limits.</p></li>
+<li><p><strong>Stable</strong> (<span class="math notranslate nohighlight">\(L &gt; 0\)</span>)
+Suppressed turbulence produces a <strong>narrow, elongated</strong> footprint whose peak
+lies further up-wind of the sensor.</p></li>
+</ul>
+<p>These regime-dependent differences give rise to distinct <em>footprint
+climatologies</em> when long time-series are stratified by stability class.</p>
+<div class="docutils container" id="id1">
+<div role="list" class="citation-list">
+<div class="citation" id="id4" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>Xuhui Cai, Monique Y. Leclerc, and G. Zhang. Flux footprint in the convective boundary layer: les analysis and comparison with lagrangian stochastic modeling. <em>Boundary-Layer Meteorology</em>, 137:31–47, 2010. <a class="reference external" href="https://doi.org/10.1007/s10546-010-9519-7">doi:10.1007/s10546-010-9519-7</a>.</p>
+</div>
+<div class="citation" id="id2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<p>Xuhui Cai, Monique Y. Leclerc, G. Zhang, and B. Viner. Backward-in-time analysis of friction velocity and footprint for flux measurements in the atmospheric boundary layer. <em>Theoretical and Applied Climatology</em>, 93:207–223, 2008. <a class="reference external" href="https://doi.org/10.1007/s00704-007-0334-0">doi:10.1007/s00704-007-0334-0</a>.</p>
+</div>
+<div class="citation" id="id6" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<p>P. de Haan and M. W. Rotach. A puff-particle model for operational estimates of dispersion in complex terrain. <em>Atmospheric Environment</em>, 32:3721–3734, 1998. <a class="reference external" href="https://doi.org/10.1016/S1352-2310(98)00042-9">doi:10.1016/S1352-2310(98)00042-9</a>.</p>
+</div>
+<div class="citation" id="id7" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></span>
+<p>D. Finn, B. Lamb, J. Sellman, A. Werner, C. Claiborn, and N. Bowne. Tracer studies to evaluate transport and dispersion models over flat terrain. <em>Journal of Applied Meteorology</em>, 35:2085–2096, 1996. <a class="reference external" href="https://doi.org/10.1175/1520-0450(1996)035&lt;2085:TSTETA&gt;2.0.CO;2">doi:10.1175/1520-0450(1996)035&lt;2085:TSTETA&gt;2.0.CO;2</a>.</p>
+</div>
+<div class="citation" id="id9" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>5<span class="fn-bracket">]</span></span>
+<p>T. K. Flesch. The footprint and random errors of flux measurements from a relaxed eddy accumulation system. <em>Boundary-Layer Meteorology</em>, 80:165–189, 1996. <a class="reference external" href="https://doi.org/10.1007/BF00119015">doi:10.1007/BF00119015</a>.</p>
+</div>
+<div class="citation" id="id8" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>6<span class="fn-bracket">]</span></span>
+<p>T. K. Flesch, J. D. Wilson, and E. Yee. Backwards-time lagrangian stochastic dispersion models and their application to estimate gaseous emissions. <em>Journal of Applied Meteorology</em>, 34:1320–1332, 1995. <a class="reference external" href="https://doi.org/10.1175/1520-0450(1995)034&lt;1320:BTLSDM&gt;2.0.CO;2">doi:10.1175/1520-0450(1995)034&lt;1320:BTLSDM&gt;2.0.CO;2</a>.</p>
+</div>
+<div class="citation" id="id10" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>7<span class="fn-bracket">]</span></span>
+<p>J. H. C. Gash. An analytical model of some aspects of forest evaporation. <em>Journal of Hydrology</em>, 86:83–97, 1986. <a class="reference external" href="https://doi.org/10.1016/0022-1694(86)90095-1">doi:10.1016/0022-1694(86)90095-1</a>.</p>
+</div>
+<div class="citation" id="id13" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>8<span class="fn-bracket">]</span></span>
+<p>T. W. Horst and J. C. Weil. Footprint estimation for scalar flux measurements in the atmospheric surface layer. <em>Boundary-Layer Meteorology</em>, 59:279–296, 1992. <a class="reference external" href="https://doi.org/10.1007/BF00119817">doi:10.1007/BF00119817</a>.</p>
+</div>
+<div class="citation" id="id14" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>9<span class="fn-bracket">]</span></span>
+<p>T. W. Horst and J. C. Weil. How far is far enough?: the fetch requirements for micrometeorological measurement of surface fluxes. <em>Journal of Atmospheric and Oceanic Technology</em>, 11:1018–1025, 1994. <a class="reference external" href="https://doi.org/10.1175/1520-0426(1994)011&lt;1018:HFIFF&gt;2.0.CO;2">doi:10.1175/1520-0426(1994)011&lt;1018:HFIFF&gt;2.0.CO;2</a>.</p>
+</div>
+<div class="citation" id="id15" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>10<span class="fn-bracket">]</span></span>
+<p>C. I. Hsieh, G. Katul, and T. W. Chi. An approximate analytical model for footprint estimation of scalar fluxes in thermally stratified atmospheric flows. <em>Advances in Water Resources</em>, 23:765–772, 2000. <a class="reference external" href="https://doi.org/10.1016/S0309-1708(99)00042-1">doi:10.1016/S0309-1708(99)00042-1</a>.</p>
+</div>
+<div class="citation" id="id20" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>11<span class="fn-bracket">]</span></span>
+<p>N. Kljun, P. Calanca, M. W. Rotach, and H. P. Schmid. A simple parameterisation for flux footprint predictions. <em>Boundary-Layer Meteorology</em>, 112:503–522, 2004. <a class="reference external" href="https://doi.org/10.1023/B:BOUN.0000030653.71031.96">doi:10.1023/B:BOUN.0000030653.71031.96</a>.</p>
+</div>
+<div class="citation" id="id21" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>12<span class="fn-bracket">]</span></span>
+<p>N. Kljun, P. Calanca, M. W. Rotach, and H. P. Schmid. A simple two-dimensional parameterisation for flux footprint prediction (ffp). <em>Geoscientific Model Development</em>, 8:3695–3713, 2015. <a class="reference external" href="https://doi.org/10.5194/gmd-8-3695-2015">doi:10.5194/gmd-8-3695-2015</a>.</p>
+</div>
+<div class="citation" id="id19" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>13<span class="fn-bracket">]</span></span>
+<p>N. Kljun, M. W. Rotach, and H. P. Schmid. Validation of a simple footprint model for use in complex terrain. <em>Boundary-Layer Meteorology</em>, 106:349–355, 2003. <a class="reference external" href="https://doi.org/10.1023/A:1020151907539">doi:10.1023/A:1020151907539</a>.</p>
+</div>
+<div class="citation" id="id17" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>14<span class="fn-bracket">]</span></span>
+<p>N. Kljun, H. P. Schmid, and M. W. Rotach. A 3-d backward lagrangian footprint model for a wide range of boundary layer stratifications. <em>Boundary-Layer Meteorology</em>, 103:205–226, 2002. <a class="reference external" href="https://doi.org/10.1023/A:1014556300021">doi:10.1023/A:1014556300021</a>.</p>
+</div>
+<div class="citation" id="id22" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>15<span class="fn-bracket">]</span></span>
+<p>R. Kormann and R. Meixner. An analytical footprint model for non-neutral stratification. <em>Boundary-Layer Meteorology</em>, 99:207–224, 2001.</p>
+</div>
+<div class="citation" id="id24" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>16<span class="fn-bracket">]</span></span>
+<p>O. A. Kurbanmuradov and K. K. Sabelfeld. Lagrangian stochastic models for turbulent dispersion in the atmospheric boundary layer. <em>Boundary-Layer Meteorology</em>, 97:191–218, 2000. <a class="reference external" href="https://doi.org/10.1023/A:1002772428055">doi:10.1023/A:1002772428055</a>.</p>
+</div>
+<div class="citation" id="id25" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>17<span class="fn-bracket">]</span></span>
+<p>M. Y. Leclerc and S. Shen. Footprint prediction of scalar fluxes using a large-eddy simulation model and a modified lagrangian dispersion model. <em>Journal of Geophysical Research: Atmospheres</em>, 102(D22):933–942, 1997. <a class="reference external" href="https://doi.org/10.1029/97JD00211">doi:10.1029/97JD00211</a>.</p>
+</div>
+<div class="citation" id="id27" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>18<span class="fn-bracket">]</span></span>
+<p>F Pasquill. Some aspects of boundary layer description. <em>Quarterly Journal of the Royal Meteorological Society</em>, 98(417):469–494, 1972.</p>
+</div>
+<div class="citation" id="id30" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>19<span class="fn-bracket">]</span></span>
+<p>Üllar Rannik, Andrey Sogachev, Thomas Foken, Mathias Göckede, Natascha Kljun, Monique Y. Leclerc, and Timo Vesala. Footprint analysis. In Torben R. Christensen, Roberta Convey, Warwick F. Vincent, Markus Drüe, Mathias Göckede, Christian Wille, and Lars Kutzbach, editors, <em>Trace Gas Biogeochemistry and the Cryosphere</em>. Springer, 2012. <a class="reference external" href="https://doi.org/10.1007/978-94-007-2351-1_8">doi:10.1007/978-94-007-2351-1_8</a>.</p>
+</div>
+<div class="citation" id="id29" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>20<span class="fn-bracket">]</span></span>
+<p>Ü. Rannik, M. Aubinet, O. Kurbanmuradov, K. Sabelfeld, T. Markkanen, and T. Vesala. Footprint analysis for measurements over a heterogeneous forest. <em>Boundary-Layer Meteorology</em>, 109:163–189, 2003. <a class="reference external" href="https://doi.org/10.1023/A:1024028430847">doi:10.1023/A:1024028430847</a>.</p>
+</div>
+<div class="citation" id="id28" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>21<span class="fn-bracket">]</span></span>
+<p>Ü. Rannik, A. Grelle, L. Klemedtsson, and T. Vesala. Flux footprint modeling for measurements over a heterogeneous forest. <em>Boundary-Layer Meteorology</em>, 97:137–166, 2000. <a class="reference external" href="https://doi.org/10.1023/A:1002702810929">doi:10.1023/A:1002702810929</a>.</p>
+</div>
+<div class="citation" id="id31" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>22<span class="fn-bracket">]</span></span>
+<p>M. W. Rotach, P. Calanca, and G. Graziani. Lpdm-b: a lagrangian particle dispersion model for estimating source-receptor relationships in complex terrain. <em>Atmospheric Environment</em>, 30:3629–3643, 1996. <a class="reference external" href="https://doi.org/10.1016/1352-2310(96)00029-5">doi:10.1016/1352-2310(96)00029-5</a>.</p>
+</div>
+<div class="citation" id="id32" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>23<span class="fn-bracket">]</span></span>
+<p>H. P. Schmid. Source areas for scalars and scalar fluxes. <em>Boundary-Layer Meteorology</em>, 67:293–318, 1994. <a class="reference external" href="https://doi.org/10.1007/BF00713146">doi:10.1007/BF00713146</a>.</p>
+</div>
+<div class="citation" id="id33" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>24<span class="fn-bracket">]</span></span>
+<p>H. P. Schmid. Experimental design for flux measurements: matching scales of observations and fluxes. <em>Agricultural and Forest Meteorology</em>, 87:179–200, 1997. <a class="reference external" href="https://doi.org/10.1016/S0168-1923(97)00011-7">doi:10.1016/S0168-1923(97)00011-7</a>.</p>
+</div>
+<div class="citation" id="id34" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>25<span class="fn-bracket">]</span></span>
+<p>P. H. Schuepp, M. Y. Leclerc, J. I. MacPherson, and R. L. Desjardins. Footprint prediction of scalar fluxes from analytical solutions of the diffusion equation. <em>Boundary-Layer Meteorology</em>, 50:355–373, 1990. <a class="reference external" href="https://doi.org/10.1007/BF00120530">doi:10.1007/BF00120530</a>.</p>
+</div>
+<div class="citation" id="id37" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>26<span class="fn-bracket">]</span></span>
+<p>A. Sogachev, M. Kelly, and M. Nilsson. Footprint analysis for measurements over boreal forests. <em>Tellus B: Chemical and Physical Meteorology</em>, 57(5):426–437, 2005. <a class="reference external" href="https://doi.org/10.1111/j.1600-0889.2005.00112.x">doi:10.1111/j.1600-0889.2005.00112.x</a>.</p>
+</div>
+<div class="citation" id="id35" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>27<span class="fn-bracket">]</span></span>
+<p>Andrey Sogachev and J. Lloyd. Using a one-and-a-half-order closure model of the planetary boundary layer for surface flux footprint estimation. <em>Boundary-Layer Meteorology</em>, 117:467–492, 2005. <a class="reference external" href="https://doi.org/10.1007/s10546-005-1754-2">doi:10.1007/s10546-005-1754-2</a>.</p>
+</div>
+<div class="citation" id="id36" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>28<span class="fn-bracket">]</span></span>
+<p>Andrey Sogachev and S. Sedletski. Footprint modelling for measurements over heterogeneous landscapes. <em>Theoretical and Applied Climatology</em>, 85:185–193, 2006. <a class="reference external" href="https://doi.org/10.1007/s00704-005-0199-0">doi:10.1007/s00704-005-0199-0</a>.</p>
+</div>
+<div class="citation" id="id38" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>29<span class="fn-bracket">]</span></span>
+<p>G. Steinfeld, M. O. Letzel, S. Raasch, M. Kanda, and A. Inagaki. Spatial representativeness of single tower measurements and the imbalance problem with eddy-covariance fluxes: results of a large-eddy simulation study. <em>Boundary-Layer Meteorology</em>, 129:117–136, 2008. <a class="reference external" href="https://doi.org/10.1007/s10546-008-9292-8">doi:10.1007/s10546-008-9292-8</a>.</p>
+</div>
+<div class="citation" id="id40" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>30<span class="fn-bracket">]</span></span>
+<p>AP Van Ulden. Simple estimates for vertical diffusion from sources near the ground. <em>Atmospheric Environment (1967)</em>, 12(11):2125–2129, 1978.</p>
+</div>
+<div class="citation" id="id41" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>31<span class="fn-bracket">]</span></span>
+<p>J. M. Wang and P. A. Davis. An analytical footprint model for flux measurements in the convective boundary layer. <em>Boundary-Layer Meteorology</em>, 126:213–233, 2008. <a class="reference external" href="https://doi.org/10.1007/s10546-007-9230-0">doi:10.1007/s10546-007-9230-0</a>.</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="fluxfootprints" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modeltypes.html" class="btn btn-neutral float-right" title="Outline of Flux Measurement Footprint Estimation Approaches" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Inkenbrandt, Natascha Kljun, John Volk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

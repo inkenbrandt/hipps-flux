@@ -37,8 +37,8 @@ class CalcFlux(object):
         * No High Pass Filtering or Trend Removal are Applied to the Data
         * Time Series Data Are Moved Forward and Backward to Find Maximum Covariance Values
         * Air Temperature and Sensible Heat Flux are Estimated From Sonic Temperature and Wind Data
-        * Other Corrections Include Transducer Shadowing, Traditional Coordinate Rotation, High Frequency Corrections, and WPL"""
-
+        * Other Corrections Include Transducer Shadowing, Traditional Coordinate Rotation, High Frequency Corrections, and WPL
+    """
 
     def __init__(self, **kwargs):
 
@@ -51,19 +51,27 @@ class CalcFlux(object):
         self.Co = 0.21  # Molar Fraction of Oxygen in the Atmosphere
         self.Mo = 0.032  # Molar Mass of Oxygen (gO2/mole)
 
-        self.Cpw = 1952.0  # specific heat of water vapor at constant pressure [J/(kg K)]
+        self.Cpw = (
+            1952.0  # specific heat of water vapor at constant pressure [J/(kg K)]
+        )
         self.Cw = 4218.0  # specific heat of liquid water at 0 C [J/(kg K)]
         self.epsilon = 18.016 / 28.97  # molecular mass ratio of water vapor to dry air
         self.g = 9.81  # acceleration due to gravity at sea level (m/s^2)
         self.von_karman = 0.41  # von Karman constant (Dyer & Hicker 1970, Webb 1970)
-        self.MU_WPL = 28.97 / 18.016  # molecular mass ratio of dry air to water vapor (used in WPL correction)
+        self.MU_WPL = (
+            28.97 / 18.016
+        )  # molecular mass ratio of dry air to water vapor (used in WPL correction)
         self.Omega = 7.292e-5  # Angular velocity of the earth for calculation of Coriolis Force (2PI/sidreal_day, where sidereal day = 23 hr 56 min. [rad/s]
         self.Sigma_SB = 5.6718e-8  # Stefan-Boltzmann constant in air [J/(K^4 m^2 s), see page 336 in McGee (1988)]
 
-        self.meter_type = 'IRGASON'
+        self.meter_type = "IRGASON"
         self.XKH20 = 1.412  # Path Length of KH20, cm
-        self.XKwC1 = -0.152214126  # First Order Coefficient in Vapor Density-KH20 Output Relationship, cm
-        self.XKwC2 = -0.001667836  # Second Order Coefficient in Vapor Density-KH20 Output Relationship, cm
+        self.XKwC1 = (
+            -0.152214126
+        )  # First Order Coefficient in Vapor Density-KH20 Output Relationship, cm
+        self.XKwC2 = (
+            -0.001667836
+        )  # Second Order Coefficient in Vapor Density-KH20 Output Relationship, cm
 
         self.sonic_dir = 225  # Degrees clockwise from true North
         self.UHeight = 3.52  # Height of Sonic Anemometer above Ground Surface, m
@@ -73,13 +81,19 @@ class CalcFlux(object):
         self.direction_bad_min = 0  # Clockwise Orientation from DirectionKH20_U
         self.direction_bad_max = 360  # Clockwise Orientation from DirectionKH20_U
 
-        self.Kw = 1  # Extinction Coefficient of Water (m^3/[g*cm]) -instrument calibration
-        self.Ko = -0.0045  # Extinction Coefficient of Oxygen (m^3/[g*cm]) -derived experimentally
+        self.Kw = (
+            1  # Extinction Coefficient of Water (m^3/[g*cm]) -instrument calibration
+        )
+        self.Ko = (
+            -0.0045
+        )  # Extinction Coefficient of Oxygen (m^3/[g*cm]) -derived experimentally
 
-        self.covar = {}  # Dictionary of covariance values; includes max calculated covariances
+        self.covar = (
+            {}
+        )  # Dictionary of covariance values; includes max calculated covariances
         self.avgvals = {}  # Dictionary of the average values
-        self.stdvals = {} # Dictionary of the standard deviations
-        self.errvals = {} # Dictionary of standard errors
+        self.stdvals = {}  # Dictionary of the standard deviations
+        self.errvals = {}  # Dictionary of standard errors
 
         self.cosv = None
         self.sinv = None
@@ -87,7 +101,7 @@ class CalcFlux(object):
         self.cosTheta = None
 
         # List of Variables for despiking
-        self.despikefields = ['Ux', 'Uy', 'Uz', 'Ts', 'volt_KH20', 'Pr', 'Rh','pV']
+        self.despikefields = ["Ux", "Uy", "Uz", "Ts", "volt_KH20", "Pr", "Rh", "pV"]
 
         self.wind_compass = None
         self.pathlen = None
@@ -99,19 +113,19 @@ class CalcFlux(object):
 
         # List of common variables and their units
         self.parameters = {
-            'Ea': ['Actual Vapor Pressure', 'kPa'],
-            'LnKH': ['Natural Log of Krypton Hygrometer Output', 'ln(mV)'],
-            'Pr': ['Air Pressure', 'Pa'],
-            'Ta': ['Air Temperature', 'K'],
-            'Ts': ['Sonic Temperature', 'K'],
-            'Ux': ['X Component of Wind Speed', 'm/s'],
-            'Uy': ['Y Component of Wind Speed', 'm/s'],
-            'Uz': ['Z Component of Wind Speed', 'm/s'],
-            'E': ['Vapor Pressure', 'kPa'],
-            'Q': ['Specific Humidity', 'unitless'],
-            'pV': ['Water Vapor Density', 'kg/m^3'],
-            'Sd': ['Entropy of Dry Air', 'J/K'],
-            'Tsa': ['Absolute Air Temperature Derived from Sonic Temperature', 'K'],
+            "Ea": ["Actual Vapor Pressure", "kPa"],
+            "LnKH": ["Natural Log of Krypton Hygrometer Output", "ln(mV)"],
+            "Pr": ["Air Pressure", "Pa"],
+            "Ta": ["Air Temperature", "K"],
+            "Ts": ["Sonic Temperature", "K"],
+            "Ux": ["X Component of Wind Speed", "m/s"],
+            "Uy": ["Y Component of Wind Speed", "m/s"],
+            "Uz": ["Z Component of Wind Speed", "m/s"],
+            "E": ["Vapor Pressure", "kPa"],
+            "Q": ["Specific Humidity", "unitless"],
+            "pV": ["Water Vapor Density", "kg/m^3"],
+            "Sd": ["Entropy of Dry Air", "J/K"],
+            "Tsa": ["Absolute Air Temperature Derived from Sonic Temperature", "K"],
         }
 
     def runall(self, df: pd.DataFrame) -> pd.Series:
@@ -128,20 +142,20 @@ class CalcFlux(object):
 
         df = self.renamedf(df)
 
-        if 'Ea' in df.columns:
+        if "Ea" in df.columns:
             pass
         else:
-            df['Ea'] = self.tetens(df['Ta'].to_numpy())
+            df["Ea"] = self.tetens(df["Ta"].to_numpy())
 
-        if self.meter_type == 'IRGASON':
+        if self.meter_type == "IRGASON":
             pass
         else:
-            if 'LnKH' in df.columns:
+            if "LnKH" in df.columns:
                 pass
-            elif 'volt_KH20' in df.columns:
-                df['LnKH'] = np.log(df['volt_KH20'].to_numpy())
+            elif "volt_KH20" in df.columns:
+                df["LnKH"] = np.log(df["volt_KH20"].to_numpy())
             # Calculate the Correct XKw Value for KH20
-            XKw = self.XKwC1 + 2 * self.XKwC2 * (df['pV'].mean() * 1000.)
+            XKw = self.XKwC1 + 2 * self.XKwC2 * (df["pV"].mean() * 1000.0)
             self.Kw = XKw / self.XKH20
             # TODO Calc pV from lnKH20 and add to dataframe as variable
 
@@ -150,37 +164,44 @@ class CalcFlux(object):
                 df[col] = self.despike_quart_filter(df[col])
 
         # Convert Sonic and Air Temperatures from Degrees C to Kelvin
-        df.loc[:, 'Ts'] = self.convert_CtoK(df['Ts'].to_numpy())
-        df.loc[:, 'Ta'] = self.convert_CtoK(df['Ta'].to_numpy())
+        df.loc[:, "Ts"] = self.convert_CtoK(df["Ts"].to_numpy())
+        df.loc[:, "Ta"] = self.convert_CtoK(df["Ta"].to_numpy())
 
         # Remove shadow effects of the CSAT (this is also done by the CSAT Firmware)
-        df['Ux'], df['Uy'], df['Uz'] = self.shadow_correction(df['Ux'].to_numpy(),
-                                                              df['Uy'].to_numpy(),
-                                                              df['Uz'].to_numpy())
+        df["Ux"], df["Uy"], df["Uz"] = self.shadow_correction(
+            df["Ux"].to_numpy(), df["Uy"].to_numpy(), df["Uz"].to_numpy()
+        )
         self.avgvals = df.mean().to_dict()
 
         # Calculate Sums and Means of Parameter Arrays
         df = self.calculated_parameters(df)
 
         # Calculate Covariances (Maximum Furthest From Zero With Sign in Lag Period)
-        self.calc_covar(df['Ux'].to_numpy(),
-                        df['Uy'].to_numpy(),
-                        df['Uz'].to_numpy(),
-                        df['Ts'].to_numpy(),
-                        df['Q'].to_numpy())
+        self.calc_covar(
+            df["Ux"].to_numpy(),
+            df["Uy"].to_numpy(),
+            df["Uz"].to_numpy(),
+            df["Ts"].to_numpy(),
+            df["Q"].to_numpy(),
+            df["pV"].to_numpy(),
+        )
 
         # Calculate max variance to close separation between sensors
-        velocities = {"Ux": df["Ux"].to_numpy(),
-                      "Uy": df["Uy"].to_numpy(),
-                      "Uz": df["Uz"].to_numpy()}
+        velocities = {
+            "Ux": df["Ux"].to_numpy(),
+            "Uy": df["Uy"].to_numpy(),
+            "Uz": df["Uz"].to_numpy(),
+        }
 
-        covariance_variables = {"Ux": df["Ux"].to_numpy(),
-                                "Uy": df["Uy"].to_numpy(),
-                                "Uz": df["Uz"].to_numpy(),
-                                "Ts": df["Ts"].to_numpy(),
-                                "pV": df["pV"].to_numpy(),
-                                "Q": df["Q"].to_numpy(),
-                                "Sd": df["Sd"].to_numpy()}
+        covariance_variables = {
+            "Ux": df["Ux"].to_numpy(),
+            "Uy": df["Uy"].to_numpy(),
+            "Uz": df["Uz"].to_numpy(),
+            "Ts": df["Ts"].to_numpy(),
+            "pV": df["pV"].to_numpy(),
+            "Q": df["Q"].to_numpy(),
+            "Sd": df["Sd"].to_numpy(),
+        }
 
         # This iterates through the velocities and calculates the maximum covariance between
         # the velocity and the other variables
@@ -188,18 +209,18 @@ class CalcFlux(object):
             for jk, jv in covariance_variables.items():
                 self.covar[f"{ik}-{jk}"] = self.calc_max_covariance(iv, jv)[0][1]
 
-        self.covar["Ts-Q"] = self.calc_max_covariance(df['Ts'], df['Q'], self.lag)[0][1]
+        self.covar["Ts-Q"] = self.calc_max_covariance(df["Ts"], df["Q"], self.lag)[0][1]
 
         # Traditional Coordinate Rotation
         cosv, sinv, sinTheta, cosTheta, Uxy, Uxyz = self.coord_rotation(df)
 
-        df = self.rotate_velocity_values(df, 'Ux', 'Uy', 'Uz')
+        df = self.rotate_velocity_values(df, "Ux", "Uy", "Uz")
 
         # Find the Mean Squared Error of Velocity Components and Humidity
-        self.UxMSE = self.calc_MSE(df['Ux'])
-        self.UyMSE = self.calc_MSE(df['Uy'])
-        self.UzMSE = self.calc_MSE(df['Uz'])
-        self.QMSE = self.calc_MSE(df['Q'])
+        self.UxMSE = self.calc_MSE(df["Ux"])
+        self.UyMSE = self.calc_MSE(df["Uy"])
+        self.UzMSE = self.calc_MSE(df["Uz"])
+        self.QMSE = self.calc_MSE(df["Q"])
 
         # Correct Covariances for Coordinate Rotation
         self.covar_coord_rot_correction(cosv, sinv, sinTheta, cosTheta)
@@ -207,41 +228,46 @@ class CalcFlux(object):
         Ustr = np.sqrt(self.covar["Uxy-Uz"])
 
         # Find Average Air Temperature From Average Sonic Temperature
-        Tsa = self.calc_Tsa(df['Ts'].mean(), df['Pr'].mean(), df['pV'].mean())
+        Tsa = self.calc_Tsa(df["Ts"].mean(), df["Pr"].mean(), df["pV"].mean())
 
         # Calculate the Latent Heat of Vaporization (eq. 2.57 in Foken)
-        lamb = (2500800 - 2366.8 * (self.convert_KtoC(Tsa)))
+        lamb = 2500800 - 2366.8 * (self.convert_KtoC(Tsa))
 
         # Determine Vertical Wind and Water Vapor Density Covariance
-        #Uz_pV = (self.covar["Uz-pV"] / XKw) / 1000
+        # Uz_pV = (self.covar["Uz-pV"] / XKw) / 1000
 
         # Calculate the Correct Average Values of Some Key Parameters
-        self.Cp = self.Cpd * (1 + 0.84 * df['Q'].mean())
-        self.pD = (df['Pr'].mean() - df['E'].mean()) / (self.Rd * Tsa)
-        self.p = self.pD + df['pV'].mean()
+        self.Cp = self.Cpd * (1 + 0.84 * df["Q"].mean())
+        self.pD = (df["Pr"].mean() - df["E"].mean()) / (self.Rd * Tsa)
+        self.p = self.pD + df["pV"].mean()
 
         # Calculate Variance of Air Temperature From Variance of Sonic Temperature
-        StDevTa = np.sqrt(self.covar["Ts-Ts"]
-                          - 1.02 * df['Ts'].mean() * self.covar["Ts-Q"]
-                          - 0.2601 * self.QMSE * df['Ts'].mean() ** 2)
-        Uz_Ta = self.covar["Uz-Ts"] - 0.07 * lamb * self.covar["Uz-pV"] / (self.p * self.Cp)
+        StDevTa = np.sqrt(
+            self.covar["Ts-Ts"]
+            - 1.02 * df["Ts"].mean() * self.covar["Ts-Q"]
+            - 0.2601 * self.QMSE * df["Ts"].mean() ** 2
+        )
+        Uz_Ta = self.covar["Uz-Ts"] - 0.07 * lamb * self.covar["Uz-pV"] / (
+            self.p * self.Cp
+        )
 
         # Determine Saturation Vapor Pressure of the Air Using Highly Accurate Wexler's Equations Modified by Hardy
-        Td = self.calc_Td_dewpoint(df['E'].mean())
-        D = self.calc_Es(Tsa) - df['E'].mean()
-        S = (self.calc_Q(df['Pr'].mean(),
-                                           self.calc_Es(Tsa + 1)) - self.calc_Q(df['Pr'].mean(),
-                                                                                self.calc_Es(Tsa - 1))) / 2
+        Td = self.calc_Td_dewpoint(df["E"].mean())
+        D = self.calc_Es(Tsa) - df["E"].mean()
+        S = (
+            self.calc_Q(df["Pr"].mean(), self.calc_Es(Tsa + 1))
+            - self.calc_Q(df["Pr"].mean(), self.calc_Es(Tsa - 1))
+        ) / 2
 
         # Determine Wind Direction
-        Ux_avg = np.mean(df['Ux'].to_numpy())
-        Uy_avg = np.mean(df['Uy'].to_numpy())
-        Uz_avg = np.mean(df['Uz'].to_numpy())
+        Ux_avg = np.mean(df["Ux"].to_numpy())
+        Uy_avg = np.mean(df["Uy"].to_numpy())
+        Uz_avg = np.mean(df["Uz"].to_numpy())
 
         pathlen, direction = self.determine_wind_dir(Ux_avg, Uy_avg)
 
         # Calculate the Average and Standard Deviations of the Rotated Velocity Components
-        StDevUz = df['Uz'].std()
+        StDevUz = df["Uz"].std()
         UMean = Ux_avg * cosTheta * cosv + Uy_avg * cosTheta * sinv + Uz_avg * sinTheta
 
         # Frequency Response Corrections (Massman, 2000 & 2001)
@@ -277,26 +303,58 @@ class CalcFlux(object):
         exchange = ((self.p * self.Cp) / (S + self.Cp / lamb)) * self.covar["Uz_Sd"]
 
         # KH20 Oxygen Correction
-        self.covar["Uz-pV"] += self.correct_KH20(Uz_Ta, df['Pr'].mean(), Tsa)
+        self.covar["Uz-pV"] += self.correct_KH20(Uz_Ta, df["Pr"].mean(), Tsa)
 
         # Calculate New H and LE Values
         H = self.p * self.Cp * Uz_Ta
         lambdaE = lamb * self.covar["Uz-pV"]
 
         # Webb, Pearman and Leuning Correction
-        pVavg = np.mean(df['pV'].to_numpy())
-        lambdaE = self.webb_pearman_leuning(lamb, Tsa, pVavg, Uz_Ta, self.covar["Uz-pV"])
+        pVavg = np.mean(df["pV"].to_numpy())
+        lambdaE = self.webb_pearman_leuning(
+            lamb, Tsa, pVavg, Uz_Ta, self.covar["Uz-pV"]
+        )
 
         # Finish Output
         Tsa = self.convert_KtoC(Tsa)
         Td = self.convert_KtoC(Td)
         zeta = self.UHeight / L
-        ET = lambdaE * self.get_Watts_to_H2O_conversion_factor(Tsa, (
-                df.last_valid_index() - df.first_valid_index()) / pd.to_timedelta(1, unit='D'))
+        ET = lambdaE * self.get_Watts_to_H2O_conversion_factor(
+            Tsa,
+            (df.last_valid_index() - df.first_valid_index())
+            / pd.to_timedelta(1, unit="D"),
+        )
         # Out.Parameters = CWP
-        self.columns = ['Ta', 'Td', 'D', 'Ustr', 'zeta', 'H', 'StDevUz', 'StDevTa', 'direction', 'exchange', 'lambdaE',
-                        'ET', 'Uxy']
-        self.out = [Tsa, Td, D, Ustr, zeta, H, StDevUz, StDevTa, direction, exchange, lambdaE, ET, Uxy]
+        self.columns = [
+            "Ta",
+            "Td",
+            "D",
+            "Ustr",
+            "zeta",
+            "H",
+            "StDevUz",
+            "StDevTa",
+            "direction",
+            "exchange",
+            "lambdaE",
+            "ET",
+            "Uxy",
+        ]
+        self.out = [
+            Tsa,
+            Td,
+            D,
+            Ustr,
+            zeta,
+            H,
+            StDevUz,
+            StDevTa,
+            direction,
+            exchange,
+            lambdaE,
+            ET,
+            Uxy,
+        ]
         return pd.Series(data=self.out, index=self.columns)
 
     def run_irga(self, df: pd.DataFrame) -> pd.Series:
@@ -317,51 +375,101 @@ class CalcFlux(object):
                 df[col + "_ro"] = self.despike_med_mod(df[col])
 
         # Convert Sonic and Air Temperatures from Degrees C to Kelvin
-        df.loc[:, 'Ts'] = self.convert_CtoK(df['Ts_ro'].to_numpy())
-        df.loc[:, 'Ta'] = self.convert_CtoK(df['Ta'].to_numpy())
+        df.loc[:, "Ts"] = self.convert_CtoK(df["Ts_ro"].to_numpy())
+        df.loc[:, "Ta"] = self.convert_CtoK(df["Ta"].to_numpy())
 
         # Remove shadow effects of the CSAT (this is also done by the CSAT Firmware)
-        df['Ux'], df['Uy'], df['Uz'] = self.shadow_correction(df['Ux_ro'].to_numpy(),
-                                                                  df['Uy_ro'].to_numpy(),
-                                                                  df['Uz_ro'].to_numpy())
-        #print(df[['Ux','Uy','Uz']])
+        df["Ux"], df["Uy"], df["Uz"] = self.shadow_correction(
+            df["Ux_ro"].to_numpy(), df["Uy_ro"].to_numpy(), df["Uz_ro"].to_numpy()
+        )
+        # print(df[['Ux','Uy','Uz']])
         self.avgvals = df.mean().to_dict()
 
         # Calculate Sums and Means of Parameter Arrays
         # convert air pressure from kPa to Pa
-        df['Pr'] = df['Pr_ro'] * 1000.
+        df["Pr"] = df["Pr_ro"] * 1000.0
         # convert pV to g/m-3
-        df['pV'] = df['pV_ro'] * 0.001
+        df["pV"] = df["pV_ro"] * 0.001
 
-        df['E'] = self.calc_E(df['pV'], df['Ts'])
+        df["E"] = self.calc_E(df["pV"], df["Ts"])
         # convert air pressure from kPa to Pa
-        df['Q'] = self.calc_Q(df['Pr'], df['E'])
-        df['Tsa'] = self.calc_Tsa(df['Ts'], df['Q'])
-        #df['Tsa2'] = self.calc_tc_air_temp_sonic(df['Ts'], df['pV'], df['Pr'])
-        df['Es'] = self.calc_Es(df['Tsa'])
-        df['Sd'] = self.calc_Q(df['Pr'], self.calc_Es(df['Tsa'])) - df['Q']
+        df["Q"] = self.calc_Q(df["Pr"], df["E"])
+        df["Tsa"] = self.calc_Tsa(df["Ts"], df["Q"])
+        # df['Tsa2'] = self.calc_tc_air_temp_sonic(df['Ts'], df['pV'], df['Pr'])
+        df["Es"] = self.calc_Es(df["Tsa"])
+        df["Sd"] = self.calc_Q(df["Pr"], self.calc_Es(df["Tsa"])) - df["Q"]
 
         # Calculate Covariances (Maximum Furthest From Zero With Sign in Lag Period)
-        self.calc_covar(df['Ux'].to_numpy(),
-                            df['Uy'].to_numpy(),
-                            df['Uz'].to_numpy(),
-                            df['Ts'].to_numpy(),
-                            df['Q'].to_numpy(),
-                            df['pV'].to_numpy())
+        self.calc_covar(
+            df["Ux"].to_numpy(),
+            df["Uy"].to_numpy(),
+            df["Uz"].to_numpy(),
+            df["Ts"].to_numpy(),
+            df["Q"].to_numpy(),
+            df["pV"].to_numpy(),
+        )
 
         # Calculate max variance to close separation between sensors
-        velocities = {"Ux": df["Ux"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                      "Uy": df["Uy"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                      "Uz": df["Uz"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy()}
+        velocities = {
+            "Ux": df["Ux"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Uy": df["Uy"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Uz": df["Uz"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+        }
 
-        covariance_variables = {"Ux": df["Ux"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "Uy": df["Uy"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "Uz": df["Uz"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "Ts": df["Ts"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "Tsa": df["Tsa"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "pV": df["pV"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "Q": df["Q"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy(),
-                                "Sd": df["Sd"].interpolate().fillna(method='bfill').fillna(method='ffill').to_numpy()}
+        covariance_variables = {
+            "Ux": df["Ux"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Uy": df["Uy"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Uz": df["Uz"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Ts": df["Ts"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Tsa": df["Tsa"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "pV": df["pV"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Q": df["Q"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+            "Sd": df["Sd"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
+            .to_numpy(),
+        }
 
         # This iterates through the velocities and calculates the maximum covariance between
         # the velocity and the other variables
@@ -374,19 +482,21 @@ class CalcFlux(object):
                     self.covar[f"{ik}-{jk}"] = self.calc_cov(iv, jv)
 
         try:
-            self.covar["Ts-Q"] = self.calc_max_covariance(df['Ts'].interpolate().fillna(method='bfill').fillna(method='ffill'),
-                                                          df['Q'].interpolate().fillna(method='bfill').fillna(method='ffill'),
-                                                          self.lag)[0][1]
+            self.covar["Ts-Q"] = self.calc_max_covariance(
+                df["Ts"].interpolate().fillna(method="bfill").fillna(method="ffill"),
+                df["Q"].interpolate().fillna(method="bfill").fillna(method="ffill"),
+                self.lag,
+            )[0][1]
         except IndexError:
             self.covar["Ts-Q"] = self.calc_cov(iv, jv)
 
         # Traditional Coordinate Rotation
         cosv, sinv, sinTheta, cosTheta, Uxy, Uxy_Uz = self.coord_rotation(df)
 
-        df = self.rotate_velocity_values(df, 'Ux', 'Uy', 'Uz')
+        df = self.rotate_velocity_values(df, "Ux", "Uy", "Uz")
 
         # Find the Mean Squared Error of Velocity Components and Humidity
-        for varib in ['Ux', 'Uy', 'Uz', 'Q', 'Ts', 'Tsa']:
+        for varib in ["Ux", "Uy", "Uz", "Q", "Ts", "Tsa"]:
             self.errvals[varib] = self.calc_MSE(df[varib].to_numpy())
 
         # Correct Covariances for Coordinate Rotation
@@ -395,43 +505,56 @@ class CalcFlux(object):
         Ustr = np.sqrt(self.covar["Uxy-Uz"])
 
         # Find Average Air Temperature From Average Sonic Temperature
-        Tsa = self.calc_Tsa_sonic_temp(df['Ts'].mean(), df['Pr'].mean(), df['pV'].mean())
+        Tsa = self.calc_Tsa_sonic_temp(
+            df["Ts"].mean(), df["Pr"].mean(), df["pV"].mean()
+        )
 
         # Calculate the Latent Heat of Vaporization (eq. 2.57 in Foken)
-        lamb = (2500800 - 2366.8 * (self.convert_KtoC(Tsa)))
+        lamb = 2500800 - 2366.8 * (self.convert_KtoC(Tsa))
 
-        StDevTa = np.sqrt(np.abs(
-            self.covar["Ts-Ts"] - 1.02 * df['Ts'].mean() * self.covar["Ts-Q"] - 0.2601 * self.errvals['Q'] * df[
-                'Ts'].mean() ** 2))
+        StDevTa = np.sqrt(
+            np.abs(
+                self.covar["Ts-Ts"]
+                - 1.02 * df["Ts"].mean() * self.covar["Ts-Q"]
+                - 0.2601 * self.errvals["Q"] * df["Ts"].mean() ** 2
+            )
+        )
 
         # Calculate the Correct Average Values of Some Key Parameters
-        self.Cp = self.Cpd * (1 + 0.84 * df['Q'].mean())
-        self.pD = (df['Pr'].mean() - df['E'].mean()) / (self.Rd * Tsa)
-        self.p = self.pD + df['pV'].mean()
+        self.Cp = self.Cpd * (1 + 0.84 * df["Q"].mean())
+        self.pD = (df["Pr"].mean() - df["E"].mean()) / (self.Rd * Tsa)
+        self.p = self.pD + df["pV"].mean()
 
         # Calculate Variance of Air Temperature From Variance of Sonic Temperature
-        StDevTa = np.sqrt(np.abs(self.covar["Ts-Ts"]
-                                 - 1.02 * df['Ts'].mean() * self.covar["Ts-Q"]
-                                 - 0.2601 * self.errvals['Q'] * df['Ts'].mean() ** 2))
+        StDevTa = np.sqrt(
+            np.abs(
+                self.covar["Ts-Ts"]
+                - 1.02 * df["Ts"].mean() * self.covar["Ts-Q"]
+                - 0.2601 * self.errvals["Q"] * df["Ts"].mean() ** 2
+            )
+        )
 
-        Uz_Ta = self.covar["Uz-Ts"] - 0.07 * lamb * self.covar["Uz-pV"] / (self.p * self.Cp)
+        Uz_Ta = self.covar["Uz-Ts"] - 0.07 * lamb * self.covar["Uz-pV"] / (
+            self.p * self.Cp
+        )
 
         # Determine Saturation Vapor Pressure of the Air Using Highly Accurate Wexler's Equations Modified by Hardy
-        Td = self.calc_Td_dewpoint(df['E'].mean())
-        D = self.calc_Es(Tsa) - df['E'].mean()
-        S = (self.calc_Q(df['Pr'].mean(),
-                             self.calc_Es(Tsa + 1)) - self.calc_Q(df['Pr'].mean(),
-                                                                          self.calc_Es(Tsa - 1))) / 2
+        Td = self.calc_Td_dewpoint(df["E"].mean())
+        D = self.calc_Es(Tsa) - df["E"].mean()
+        S = (
+            self.calc_Q(df["Pr"].mean(), self.calc_Es(Tsa + 1))
+            - self.calc_Q(df["Pr"].mean(), self.calc_Es(Tsa - 1))
+        ) / 2
 
         # Determine Wind Direction
-        Ux_avg = np.mean(df['Uxr'].to_numpy())
-        Uy_avg = np.mean(df['Uyr'].to_numpy())
-        Uz_avg = np.mean(df['Uzr'].to_numpy())
+        Ux_avg = np.mean(df["Uxr"].to_numpy())
+        Uy_avg = np.mean(df["Uyr"].to_numpy())
+        Uz_avg = np.mean(df["Uzr"].to_numpy())
 
         pathlen, direction = self.determine_wind_dir(Ux_avg, Uy_avg)
 
         # Calculate the Average and Standard Deviations of the Rotated Velocity Components
-        StDevUz = df['Uz'].std()
+        StDevUz = df["Uz"].std()
         UMean = Ux_avg * cosTheta * cosv + Uy_avg * cosTheta * sinv + Uz_avg * sinTheta
 
         # Frequency Response Corrections (Massman, 2000 & 2001)
@@ -451,13 +574,13 @@ class CalcFlux(object):
         Ts = self.correct_spectral(B, alpha, _Ts)
         self.covar["Uxy-Uz"] /= self.correct_spectral(B, alpha, momentum)
         Ustr = np.sqrt(self.covar["Uxy-Uz"])
-    
+
         # Recalculate L With New Uᕽ and Uz_Ta, and Calculate High Frequency Corrections
         L = self.calc_L(Ustr, Tsa, Uz_Ta / Ts)
         alpha, X = self.calc_AlphX(L)
         Ts = self.correct_spectral(B, alpha, _Ts)
         KH20 = self.correct_spectral(B, alpha, _KH20)
-    
+
         # Correct the Covariance Values
         Uz_Ta /= Ts
         self.covar["Uz-pV"] /= KH20
@@ -465,28 +588,60 @@ class CalcFlux(object):
         Ustr = np.sqrt(self.covar["Uxy-Uz"])
         self.covar["Uz-Sd"] /= KH20
         exchange = ((self.p * self.Cp) / (S + self.Cp / lamb)) * self.covar["Uz-Sd"]
-    
+
         # KH20 Oxygen Correction
-        self.covar["Uz-pV"] += self.correct_KH20(Uz_Ta, df['Pr'].mean(), Tsa)
-    
+        self.covar["Uz-pV"] += self.correct_KH20(Uz_Ta, df["Pr"].mean(), Tsa)
+
         # Calculate New H and LE Values
         H = self.p * self.Cp * Uz_Ta
         lambdaE = lamb * self.covar["Uz-pV"]
-    
+
         # Webb, Pearman and Leuning Correction
-        pVavg = np.mean(df['pV'].to_numpy())
-        lambdaE = self.webb_pearman_leuning(lamb, Tsa, pVavg, Uz_Ta, self.covar["Uz-pV"])
-    
+        pVavg = np.mean(df["pV"].to_numpy())
+        lambdaE = self.webb_pearman_leuning(
+            lamb, Tsa, pVavg, Uz_Ta, self.covar["Uz-pV"]
+        )
+
         # Finish Output
         Tsa = self.convert_KtoC(Tsa)
         Td = self.convert_KtoC(Td)
         zeta = self.UHeight / L
-        ET = lambdaE * self.get_Watts_to_H2O_conversion_factor(Tsa, (
-                df.last_valid_index() - df.first_valid_index()) / pd.to_timedelta(1, unit='D'))
+        ET = lambdaE * self.get_Watts_to_H2O_conversion_factor(
+            Tsa,
+            (df.last_valid_index() - df.first_valid_index())
+            / pd.to_timedelta(1, unit="D"),
+        )
         # Out.Parameters = CWP
-        self.columns = ['Ta', 'Td', 'D', 'Ustr', 'zeta', 'H', 'StDevUz', 'StDevTa', 'direction', 'exchange', 'lambdaE',
-                            'ET', 'Uxy']
-        self.out = [Tsa, Td, D, Ustr, zeta, H, StDevUz, StDevTa, direction, exchange, lambdaE, ET, Uxy]
+        self.columns = [
+            "Ta",
+            "Td",
+            "D",
+            "Ustr",
+            "zeta",
+            "H",
+            "StDevUz",
+            "StDevTa",
+            "direction",
+            "exchange",
+            "lambdaE",
+            "ET",
+            "Uxy",
+        ]
+        self.out = [
+            Tsa,
+            Td,
+            D,
+            Ustr,
+            zeta,
+            H,
+            StDevUz,
+            StDevTa,
+            direction,
+            exchange,
+            lambdaE,
+            ET,
+            Uxy,
+        ]
         return pd.Series(data=self.out, index=self.columns)
 
     def determine_wind_dir(self, uxavg=None, uyavg=None, update_existing_vel=False):
@@ -494,23 +649,23 @@ class CalcFlux(object):
 
         if uxavg:
             if update_existing_vel:
-                self.avgvals['Ux'] = uxavg
+                self.avgvals["Ux"] = uxavg
         else:
-            if 'Ux' in self.avgvals.keys():
-                uxavg = self.avgvals['Ux']
+            if "Ux" in self.avgvals.keys():
+                uxavg = self.avgvals["Ux"]
             else:
-                print('Please calculate wind velocity averages')
+                print("Please calculate wind velocity averages")
         if uyavg:
             if update_existing_vel:
-                self.avgvals['Uy'] = uyavg
+                self.avgvals["Uy"] = uyavg
         else:
-            if 'Uy' in self.avgvals.keys():
-                uyavg = self.avgvals['Uy']
+            if "Uy" in self.avgvals.keys():
+                uyavg = self.avgvals["Uy"]
             else:
-                print('Please calculate wind velocity averages')
+                print("Please calculate wind velocity averages")
 
         if uyavg and uxavg:
-            self.v = np.sqrt(uxavg ** 2 + uyavg ** 2)
+            self.v = np.sqrt(uxavg**2 + uyavg**2)
             wind_dir = np.arctan(uyavg / uxavg) * 180.0 / np.pi
             if uxavg < 0:
                 if uyavg >= 0:
@@ -525,10 +680,14 @@ class CalcFlux(object):
 
             self.wind_compass = wind_compass
             # Calculate the Lateral Separation Distance Projected Into the Mean Wind Direction
-            self.pathlen = self.PathDist_U * np.abs(np.sin((np.pi / 180) * wind_compass))
+            self.pathlen = self.PathDist_U * np.abs(
+                np.sin((np.pi / 180) * wind_compass)
+            )
             return self.pathlen, self.wind_compass
 
-    def covar_coord_rot_correction(self, cosν=None, sinv=None, sinTheta=None, cosTheta=None):
+    def covar_coord_rot_correction(
+        self, cosν=None, sinv=None, sinTheta=None, cosTheta=None
+    ):
         """Correct Covariances for Coordinate Rotation
 
         Args:
@@ -548,31 +707,55 @@ class CalcFlux(object):
             sinTheta = self.sinTheta
 
         #
-        Uz_Ts = self.covar["Uz-Tsa"] * cosTheta - self.covar["Ux-Tsa"] * sinTheta * cosν \
-                - self.covar["Uy-Tsa"] * sinTheta * sinv
+        Uz_Ts = (
+            self.covar["Uz-Tsa"] * cosTheta
+            - self.covar["Ux-Tsa"] * sinTheta * cosν
+            - self.covar["Uy-Tsa"] * sinTheta * sinv
+        )
         if np.abs(Uz_Ts) >= np.abs(self.covar["Uz-Tsa"]):
             self.covar["Uz-Tsa"] = Uz_Ts
 
-        Uz_pV = self.covar["Uz-pV"] * cosTheta - self.covar["Ux-pV"] * sinTheta * cosν \
-                - self.covar["Uy-pV"] * sinv * sinTheta
+        Uz_pV = (
+            self.covar["Uz-pV"] * cosTheta
+            - self.covar["Ux-pV"] * sinTheta * cosν
+            - self.covar["Uy-pV"] * sinv * sinTheta
+        )
         if np.abs(Uz_pV) >= np.abs(self.covar["Uz-pV"]):
             self.covar["Uz-pV"] = Uz_pV
-        self.covar["Ux-Q"] = self.covar["Ux-Q"] * cosTheta * cosν + self.covar["Uy-Q"] * cosTheta * sinv \
-                             + self.covar["Uz-Q"] * sinTheta
+        self.covar["Ux-Q"] = (
+            self.covar["Ux-Q"] * cosTheta * cosν
+            + self.covar["Uy-Q"] * cosTheta * sinv
+            + self.covar["Uz-Q"] * sinTheta
+        )
         self.covar["Uy-Q"] = self.covar["Uy-Q"] * cosν - self.covar["Uy-Q"] * sinv
-        self.covar["Uz-Q"] = self.covar["Uz-Q"] * cosTheta - self.covar["Ux-Q"] * sinTheta * cosν \
-                             - self.covar["Uy-Q"] * sinv * sinTheta
-        self.covar["Ux-Uz"] = self.covar["Ux-Uz"] * cosν * (
-                cosTheta ** 2 - sinTheta ** 2) - 2 * self.covar["Ux-Uy"] * sinTheta * cosTheta * sinv * cosν \
-                              + self.covar["Uy-Uz"] * sinv * (cosTheta ** 2 - sinTheta ** 2) \
-                              - self.errvals['Ux'] * sinTheta * cosTheta * cosν ** 2 \
-                              - self.errvals['Uy'] * sinTheta * cosTheta * sinv ** 2 + self.errvals['Uz'] * sinTheta * cosTheta
-        self.covar["Uy-Uz"] = self.covar["Uy-Uz"] * cosTheta * cosν - self.covar["Ux-Uz"] * cosTheta * sinv \
-                              - self.covar["Ux-Uy"] * sinTheta * (cosν ** 2 - sinv ** 2) \
-                              + self.errvals['Ux'] * sinTheta * sinv * cosν - self.errvals['Uy'] * sinTheta * sinv * cosν
-        self.covar["Uz-Sd"] = self.covar["Uz-Sd"] * cosTheta - self.covar["Ux-Sd"] * sinTheta * cosν \
-                              - self.covar["Uy-Sd"] * sinv * sinTheta
-        self.covar["Uxy-Uz"] = np.sqrt(self.covar["Ux-Uz"] ** 2 + self.covar["Uy-Uz"] ** 2)
+        self.covar["Uz-Q"] = (
+            self.covar["Uz-Q"] * cosTheta
+            - self.covar["Ux-Q"] * sinTheta * cosν
+            - self.covar["Uy-Q"] * sinv * sinTheta
+        )
+        self.covar["Ux-Uz"] = (
+            self.covar["Ux-Uz"] * cosν * (cosTheta**2 - sinTheta**2)
+            - 2 * self.covar["Ux-Uy"] * sinTheta * cosTheta * sinv * cosν
+            + self.covar["Uy-Uz"] * sinv * (cosTheta**2 - sinTheta**2)
+            - self.errvals["Ux"] * sinTheta * cosTheta * cosν**2
+            - self.errvals["Uy"] * sinTheta * cosTheta * sinv**2
+            + self.errvals["Uz"] * sinTheta * cosTheta
+        )
+        self.covar["Uy-Uz"] = (
+            self.covar["Uy-Uz"] * cosTheta * cosν
+            - self.covar["Ux-Uz"] * cosTheta * sinv
+            - self.covar["Ux-Uy"] * sinTheta * (cosν**2 - sinv**2)
+            + self.errvals["Ux"] * sinTheta * sinv * cosν
+            - self.errvals["Uy"] * sinTheta * sinv * cosν
+        )
+        self.covar["Uz-Sd"] = (
+            self.covar["Uz-Sd"] * cosTheta
+            - self.covar["Ux-Sd"] * sinTheta * cosν
+            - self.covar["Uy-Sd"] * sinv * sinTheta
+        )
+        self.covar["Uxy-Uz"] = np.sqrt(
+            self.covar["Ux-Uz"] ** 2 + self.covar["Uy-Uz"] ** 2
+        )
 
     def webb_pearman_leuning(self, lamb, Tsa, pVavg, Uz_Ta, Uz_pV):
         """Webb, Pearman and Leuning Correction (WPL) for density.
@@ -599,8 +782,14 @@ class CalcFlux(object):
 
         # Webb, Pearman and Leuning Correction
         pCpTsa = self.p * self.Cp * Tsa
-        pRatio = (1.0 + 1.6129 * (pVavg / self.pD))
-        LE = lamb * pCpTsa * pRatio * (Uz_pV + (pVavg / Tsa) * Uz_Ta) / (pCpTsa + lamb * pRatio * pVavg * 0.07)
+        pRatio = 1.0 + 1.6129 * (pVavg / self.pD)
+        LE = (
+            lamb
+            * pCpTsa
+            * pRatio
+            * (Uz_pV + (pVavg / Tsa) * Uz_Ta)
+            / (pCpTsa + lamb * pRatio * pVavg * 0.07)
+        )
 
         return LE
 
@@ -627,17 +816,20 @@ class CalcFlux(object):
             df: Dataframe with headers that will work with the script
 
         """
-        return df.rename(columns={'T_SONIC': 'Ts',
-                                  'TA_1_1_1': 'Ta',
-                                  'amb_press': 'Pr',
-                                  'PA': 'Pr',
-                                  'H2O_density': 'pV',
-                                  'RH_1_1_1': 'Rh',
-                                  't_hmp': 'Ta',
-                                  'e_hmp': 'Ea',
-                                  'kh': 'volt_KH20',
-                                  'q': 'Q'
-                                  })
+        return df.rename(
+            columns={
+                "T_SONIC": "Ts",
+                "TA_1_1_1": "Ta",
+                "amb_press": "Pr",
+                "PA": "Pr",
+                "H2O_density": "pV",
+                "RH_1_1_1": "Rh",
+                "t_hmp": "Ta",
+                "e_hmp": "Ea",
+                "kh": "volt_KH20",
+                "q": "Q",
+            }
+        )
 
     # @njit
     def despike(self, arr, nstd: float = 4.5):
@@ -657,7 +849,7 @@ class CalcFlux(object):
         stdd = np.nanstd(arr) * nstd
         avg = np.nanmean(arr)
         avgdiff = stdd - np.abs(arr - avg)
-        y = np.where(avgdiff >= 0, arr, np.NaN)
+        y = np.where(avgdiff >= 0, arr, np.nan)
         nans, x = np.isnan(y), lambda z: z.nonzero()[0]
         if len(x(~nans)) > 0:
             y[nans] = np.interp(x(nans), x(~nans), y[~nans])
@@ -687,7 +879,7 @@ class CalcFlux(object):
         np_fbewma = np.mean(stacked_ewma, axis=0)
         np_spikey = np.array(df_column)
         # np_fbewma = np.array(fb_ewma)
-        cond_delta = (np.abs(np_spikey - np_fbewma) > delta)
+        cond_delta = np.abs(np_spikey - np_fbewma) > delta
         np_remove_outliers = np.where(cond_delta, np.nan, np_spikey)
         return np_remove_outliers
 
@@ -713,9 +905,9 @@ class CalcFlux(object):
 
         X = sm.add_constant(x)
         mod_rlm = sm.RLM(y, X)
-        mod_fit = mod_rlm.fit(maxiter=300, scale_est='mad')
+        mod_fit = mod_rlm.fit(maxiter=300, scale_est="mad")
 
-        cond_delta = (np.abs(mod_fit.resid) > 3 * mod_fit.scale)
+        cond_delta = np.abs(mod_fit.resid) > 3 * mod_fit.scale
         np_remove_outliers = np.where(cond_delta, np.nan, np_spikey)
         nanind = np.array(np.where(np.isnan(np_remove_outliers)))[0]
 
@@ -732,7 +924,15 @@ class CalcFlux(object):
 
         return data_out
 
-    def despike_quart_filter(self, df_column, win=600, fill_na=True, top_quant=0.97, bot_quant=0.03, thresh=None):
+    def despike_quart_filter(
+        self,
+        df_column,
+        win=600,
+        fill_na=True,
+        top_quant=0.97,
+        bot_quant=0.03,
+        thresh=None,
+    ):
         """Detects and removes spikes using a moving window quantile filter; if difference from median is > difference
         between 90% quartile and 10% quartile.
 
@@ -751,9 +951,30 @@ class CalcFlux(object):
         np_spikey = np.array(df_column)
 
         # Get rolling statistics
-        upper = pd.Series(df_column).rolling(window=win, center=True).quantile(top_quant).interpolate().bfill().ffill()
-        lower = pd.Series(df_column).rolling(window=win, center=True).quantile(bot_quant).interpolate().bfill().ffill()
-        med = pd.Series(df_column).rolling(window=win, center=True).median().interpolate().bfill().ffill()
+        upper = (
+            pd.Series(df_column)
+            .rolling(window=win, center=True)
+            .quantile(top_quant)
+            .interpolate()
+            .bfill()
+            .ffill()
+        )
+        lower = (
+            pd.Series(df_column)
+            .rolling(window=win, center=True)
+            .quantile(bot_quant)
+            .interpolate()
+            .bfill()
+            .ffill()
+        )
+        med = (
+            pd.Series(df_column)
+            .rolling(window=win, center=True)
+            .median()
+            .interpolate()
+            .bfill()
+            .ffill()
+        )
         iqr = upper - lower
 
         if thresh:
@@ -761,12 +982,14 @@ class CalcFlux(object):
         else:
             thresh = iqr
 
-        cond_delta = (np.abs(np_spikey - med) > thresh)
+        cond_delta = np.abs(np_spikey - med) > thresh
         np_remove_outliers = np.where(cond_delta, np.nan, np_spikey)
         nanind = np.array(np.where(np.isnan(np_remove_outliers)))[0]
 
         if fill_na:
-            data_out = pd.Series(np_remove_outliers, index=df_column.index).interpolate()
+            data_out = pd.Series(
+                np_remove_outliers, index=df_column.index
+            ).interpolate()
             # data_outnaind = data_out.index[nanind]
             # rando = np.random.normal(scale=scl, size=len(data_outnaind))
             # data_out.loc[data_outnaind] = data_out.loc[data_outnaind] #+ rando
@@ -817,8 +1040,8 @@ class CalcFlux(object):
         d2 = 0.0056577518
         d3 = -0.000075172865
         lne = np.log(E)
-        nom = (c0 + c1 * lne + c2 * lne ** 2 + c3 * lne ** 3)
-        denom = (d0 + d1 * lne + d2 * lne ** 2 + d3 * lne ** 3)
+        nom = c0 + c1 * lne + c2 * lne**2 + c3 * lne**3
+        denom = d0 + d1 * lne + d2 * lne**2 + d3 * lne**3
         return nom / denom
 
     # @njit(parallel=True)
@@ -853,8 +1076,8 @@ class CalcFlux(object):
         d3 = -0.000075172865
 
         lne = np.log(E)
-        nom = (c0 + c1 * lne + c2 * lne ** 2)
-        denom = (d0 + d1 * lne + d2 * lne ** 2 + d3 * lne ** 3)
+        nom = c0 + c1 * lne + c2 * lne**2
+        denom = d0 + d1 * lne + d2 * lne**2 + d3 * lne**3
         return nom / denom
 
     # @njit(parallel=True)
@@ -932,10 +1155,19 @@ class CalcFlux(object):
         pV = pV * 1000.0
         P_atm = 9.86923e-6 * P
         T_c1 = P_atm + (2 * self.Rv - 3.040446 * self.Rd) * pV * Ts
-        T_c2 = P_atm * P_atm + (1.040446 * self.Rd * pV * Ts) * (
-                1.040446 * self.Rd * pV * Ts) + 1.696000 * self.Rd * pV * P_atm * Ts
-        T_c3 = 2 * pV * ((self.Rv - 1.944223 * self.Rd) + (self.Rv - self.Rd) * (
-                self.Rv - 2.040446 * self.Rd) * pV * Ts / P_atm)
+        T_c2 = (
+            P_atm * P_atm
+            + (1.040446 * self.Rd * pV * Ts) * (1.040446 * self.Rd * pV * Ts)
+            + 1.696000 * self.Rd * pV * P_atm * Ts
+        )
+        T_c3 = (
+            2
+            * pV
+            * (
+                (self.Rv - 1.944223 * self.Rd)
+                + (self.Rv - self.Rd) * (self.Rv - 2.040446 * self.Rd) * pV * Ts / P_atm
+            )
+        )
 
         return (T_c1 - np.sqrt(T_c2)) / T_c3
 
@@ -981,7 +1213,7 @@ class CalcFlux(object):
             >>> print(fluxcalc.calc_L(1.2, 292.2, 1.5))
             -83.69120608637277
         """
-        return (-1 * (Ust ** 3) * Tsa) / (self.g * self.von_karman * Uz_Ta)
+        return (-1 * (Ust**3) * Tsa) / (self.g * self.von_karman * Uz_Ta)
 
     # @numba.njit#(forceobj=True)
     def calc_Tsa_sonic_temp(self, Ts, P, pV):
@@ -994,8 +1226,16 @@ class CalcFlux(object):
         :return:
         """
         E = self.calc_E(pV, Ts)
-        return -0.01645278052 * (
-                -500 * P - 189 * E + np.sqrt(250000 * P ** 2 + 128220 * E * P + 35721 * E ** 2)) / pV / self.Rv
+        return (
+            -0.01645278052
+            * (
+                -500 * P
+                - 189 * E
+                + np.sqrt(250000 * P**2 + 128220 * E * P + 35721 * E**2)
+            )
+            / pV
+            / self.Rv
+        )
 
     # @numba.jit(forceobj=True)
     def calc_AlphX(self, L):
@@ -1054,7 +1294,15 @@ class CalcFlux(object):
         g7 = 2.7150305
 
         return np.exp(
-            g0 * T ** (-2) + g1 * T ** (-1) + g2 + g3 * T + g4 * T ** 2 + g5 * T ** 3 + g6 * T ** 4 + g7 * np.log(T))
+            g0 * T ** (-2)
+            + g1 * T ** (-1)
+            + g2
+            + g3 * T
+            + g4 * T**2
+            + g5 * T**3
+            + g6 * T**4
+            + g7 * np.log(T)
+        )
 
     # @njit(parallel=True)
     def calc_cov(self, p1: np.ndarray, p2: np.ndarray) -> float:
@@ -1076,7 +1324,7 @@ class CalcFlux(object):
         return (sumproduct - (np.sum(p1) * np.sum(p2)) / len(p1)) / (len(p1) - 1)
 
     # @numba.njit#(forceobj=True)
-    def calc_MSE(self, y: np.ndarray) -> float:
+    def calc_MSE(self, y: np.ndarray):
         """Calculate mean standard error
 
         Args:
@@ -1126,17 +1374,24 @@ class CalcFlux(object):
             * Kw = Extinction Coefficient of Water (m^3/[g*cm]) -instrument calibration
             * Ko = Extinction Coefficient of Oxygen (m^3/[g*cm]) -derived experimentally
         """
-        return ((self.Co * self.Mo * P) / (self.Ru * T ** 2)) * (self.Ko / self.Kw) * Uz_Ta
+        return (
+            ((self.Co * self.Mo * P) / (self.Ru * T**2)) * (self.Ko / self.Kw) * Uz_Ta
+        )
 
     def correct_spectral(self, B, alpha, varib):
-        B_alpha = B ** alpha
-        V_alpha = varib ** alpha
-        return (B_alpha / (B_alpha + 1)) * (B_alpha / (B_alpha + V_alpha)) * (1 / (V_alpha + 1))
+        B_alpha = B**alpha
+        V_alpha = varib**alpha
+        return (
+            (B_alpha / (B_alpha + 1))
+            * (B_alpha / (B_alpha + V_alpha))
+            * (1 / (V_alpha + 1))
+        )
 
     def get_Watts_to_H2O_conversion_factor(self, temperature, day_fraction):
         to_inches = 25.4
         return (self.calc_water_density(temperature) * 86.4 * day_fraction) / (
-                self.calc_latent_heat_of_vaporization(temperature) * to_inches)
+            self.calc_latent_heat_of_vaporization(temperature) * to_inches
+        )
 
     def calc_water_density(self, temperature):
         """Calculate the density of water (kg/m3) for a given temperature (C)"""
@@ -1145,13 +1400,20 @@ class CalcFlux(object):
         d3 = 522528.9  # °C2
         d4 = 69.34881  # °C
         d5 = 999.97495  # kg/m3
-        return d5 * (1 - (temperature + d1) ** 2 * (temperature + d2) / (d3 * (temperature + d4)))  # 'kg/m^3
+        return d5 * (
+            1 - (temperature + d1) ** 2 * (temperature + d2) / (d3 * (temperature + d4))
+        )  # 'kg/m^3
 
     def lamb_func(self, x, varb):
         varib = dict(water=[2500800, -2360, 1.6, -0.06], ice=[2834100, -290, -4, 0])
-        return varib[varb][0] + varib[varb][1] * x + varib[varb][2] * x ** 2 + varib[varb][3] * x ** 3
+        return (
+            varib[varb][0]
+            + varib[varb][1] * x
+            + varib[varb][2] * x**2
+            + varib[varb][3] * x**3
+        )
 
-    def calc_latent_heat_of_vaporization(self, temperature, units='C'):
+    def calc_latent_heat_of_vaporization(self, temperature, units="C"):
         """Calculates the latent heat of vaporization (Lambda) from temperature (deg C)
 
         Args:
@@ -1165,12 +1427,16 @@ class CalcFlux(object):
             https://en.wikipedia.org/wiki/Latent_heat
         """
 
-        if units == 'K':
+        if units == "K":
             temperature = self.convert_KtoC(temperature)
         else:
             pass
 
-        return np.where(temperature >= 0, self.lamb_func(temperature,'water'),self.lamb_func(temperature,'ice')) # 'J/kg
+        return np.where(
+            temperature >= 0,
+            self.lamb_func(temperature, "water"),
+            self.lamb_func(temperature, "ice"),
+        )  # 'J/kg
 
     # @njit(parallel=True)
     def shadow_correction(self, Ux, Uy, Uz):
@@ -1183,14 +1449,30 @@ class CalcFlux(object):
         """
 
         # Rotation Matrix to Align with Path Coordinate System of Transducers
-        h = [0.25, 0.4330127018922193, 0.8660254037844386,
-             -0.5, 0.0, 0.8660254037844386,
-             0.25, -0.4330127018922193, 0.8660254037844386]
+        h = [
+            0.25,
+            0.4330127018922193,
+            0.8660254037844386,
+            -0.5,
+            0.0,
+            0.8660254037844386,
+            0.25,
+            -0.4330127018922193,
+            0.8660254037844386,
+        ]
 
         # Inverse of the Rotation Matrix
-        hinv = [0.6666666666666666, -1.3333333333333333, 0.6666666666666666,
-                1.1547005383792517, 0.0, -1.1547005383792517,
-                0.38490017945975047, 0.38490017945975047, 0.38490017945975047]
+        hinv = [
+            0.6666666666666666,
+            -1.3333333333333333,
+            0.6666666666666666,
+            1.1547005383792517,
+            0.0,
+            -1.1547005383792517,
+            0.38490017945975047,
+            0.38490017945975047,
+            0.38490017945975047,
+        ]
 
         iteration = 0
 
@@ -1199,7 +1481,7 @@ class CalcFlux(object):
             Uyh = h[3] * Ux + h[4] * Uy + h[5] * Uz
             Uzh = h[6] * Ux + h[7] * Uy + h[8] * Uz
 
-            scalar = np.sqrt(Ux ** 2. + Uy ** 2. + Uz ** 2.)
+            scalar = np.sqrt(Ux**2.0 + Uy**2.0 + Uz**2.0)
 
             Theta1 = np.arccos(np.abs(h[0] * Ux + h[1] * Uy + h[2] * Uz) / scalar)
             Theta2 = np.arccos(np.abs(h[3] * Ux + h[4] * Uy + h[5] * Uz) / scalar)
@@ -1230,7 +1512,7 @@ class CalcFlux(object):
     # Calculated Weather Parameters
     # @numba.jit
     def calculated_parameters(self, df: pd.DataFrame) -> pd.DataFrame:
-        """ Calculate weather parameters from raw data.
+        """Calculate weather parameters from raw data.
 
         Args:
             df: DataFrame containing Ea, Ts, and Pr
@@ -1238,15 +1520,15 @@ class CalcFlux(object):
         Returns:
             Adds new fields to dataframe, including pV, Tsa, Q, and Sd
         """
-        df['pV'] = self.calc_pV(df['Ea'], df['Ts'])
-        df['Tsa'] = self.calc_Tsa(df['Ts'], df['Pr'], df['pV'])
-        df['E'] = self.calc_E(df['pV'], df['Tsa'])
-        df['Q'] = self.calc_Q(df['Pr'], df['E'])
-        df['Sd'] = self.calc_Q(df['Pr'], self.calc_Es(df['Tsa'])) - df['Q']
+        df["pV"] = self.calc_pV(df["Ea"], df["Ts"])
+        df["Tsa"] = self.calc_Tsa(df["Ts"], df["Pr"], df["pV"])
+        df["E"] = self.calc_E(df["pV"], df["Tsa"])
+        df["Q"] = self.calc_Q(df["Pr"], df["E"])
+        df["Sd"] = self.calc_Q(df["Pr"], self.calc_Es(df["Tsa"])) - df["Q"]
         return df
 
     def calculated_parameters_irga(self, df: pd.DataFrame) -> pd.DataFrame:
-        """ Calculate weather parameters from raw data.
+        """Calculate weather parameters from raw data.
 
         Args:
             df: DataFrame containing Ta, Ts, and Pr
@@ -1255,13 +1537,13 @@ class CalcFlux(object):
             Adds new fields to dataframe, including pV, Tsa, Q, and Sd
         """
         # convert pV to g/m-3
-        df['Ts_K'] = self.convert_CtoK(df['Ts_ro'])
-        df['E'] = self.calc_E(df['pV_ro'] * 0.001, df['Ts_K'])
+        df["Ts_K"] = self.convert_CtoK(df["Ts_ro"])
+        df["E"] = self.calc_E(df["pV_ro"] * 0.001, df["Ts_K"])
         # convert air pressure from kPa to Pa
-        df['Q'] = self.calc_Q(df['Pr_ro'] * 1000., df['E'])
-        df['Tsa'] = self.calc_Tsa_air_temp_sonic(df['Ts_K'], df['Q'])
-        df['Es'] = self.calc_Es(df['Tsa'])
-        df['Sd'] = self.calc_Q(df['Pr_ro'], self.calc_Es(df['Tsa'])) - df['Q']
+        df["Q"] = self.calc_Q(df["Pr_ro"] * 1000.0, df["E"])
+        df["Tsa"] = self.calc_Tsa_air_temp_sonic(df["Ts_K"], df["Q"])
+        df["Es"] = self.calc_Es(df["Tsa"])
+        df["Sd"] = self.calc_Q(df["Pr_ro"], self.calc_Es(df["Tsa"])) - df["Q"]
         return df
 
     # @numba.njit#(forceobj=True)
@@ -1300,32 +1582,32 @@ class CalcFlux(object):
                 xy[0] = np.round(np.cov(x, y)[0][1], 8)
             else:
                 # covariance for positive lags
-                xy[i] = np.round(np.cov(x[i:], y[:-1 * i])[0][1], 8)
+                xy[i] = np.round(np.cov(x[i:], y[: -1 * i])[0][1], 8)
                 # covariance for negative lags
-                xy[-i] = np.round(np.cov(x[:-1 * i], x[i:])[0][1], 8)
+                xy[-i] = np.round(np.cov(x[: -1 * i], x[i:])[0][1], 8)
 
         # convert dictionary to arrays
         keys = np.array(list(xy.keys()))
         vals = np.array(list(xy.values()))
 
         # get index and value for maximum positive covariance
-        valmax, maxlagindex = self.findextreme(vals, ext='max')
+        valmax, maxlagindex = self.findextreme(vals, ext="max")
         maxlag = keys[maxlagindex]
         maxcov = (maxlag, valmax)
 
         # get index and value for get maximum negative covariance
-        valmin, minlagindex = self.findextreme(vals, ext='min')
+        valmin, minlagindex = self.findextreme(vals, ext="min")
         minlag = keys[minlagindex]
         mincov = (minlag, valmin)
 
         # get index and value for get maximum absolute covariance
-        absmax, abslagindex = self.findextreme(vals, ext='min')
+        absmax, abslagindex = self.findextreme(vals, ext="min")
         absmaxlag = keys[abslagindex]
         abscov = (absmaxlag, absmax)
 
         return abscov, maxcov, mincov, xy
 
-    def findextreme(self, vals, ext='abs'):
+    def findextreme(self, vals, ext="abs"):
         """Used to find the extreme value and its index in an arrary.
 
         Args:
@@ -1336,12 +1618,12 @@ class CalcFlux(object):
             extreme value, index of extreme value
         """
 
-        if ext == 'abs':
+        if ext == "abs":
             vals = np.abs(vals)
             bigval = np.nanmax(vals)
-        elif ext == 'max':
+        elif ext == "max":
             bigval = np.nanmax(vals)
-        elif ext == 'min':
+        elif ext == "min":
             bigval = np.nanmin(vals)
         else:
             vals = np.abs(vals)
@@ -1351,8 +1633,9 @@ class CalcFlux(object):
 
         return bigval, lagindex
 
-
-    def calc_max_covariance_df(self, df: pd.DataFrame, colx: str, coly: str, lags: int = 10) -> list[float, int]:
+    def calc_max_covariance_df(
+        self, df: pd.DataFrame, colx: str, coly: str, lags: int = 10
+    ) -> list[float, int]:
         """
         Find maximum covariance between two variables
         :param df: Pandas DataFrame containing the data
@@ -1379,7 +1662,9 @@ class CalcFlux(object):
         return maxcov, lagno
 
     # @numba.njit#(forceobj=True)
-    def coord_rotation(self, df: pd.DataFrame = None, Ux: str = 'Ux', Uy: str = 'Uy', Uz: str = 'Uz'):
+    def coord_rotation(
+        self, df: pd.DataFrame = None, Ux: str = "Ux", Uy: str = "Uy", Uz: str = "Uz"
+    ):
         """Traditional Coordinate Rotation; The first correction is the rotation of the coordinate system around the
         z-axis into the mean wind.
 
@@ -1404,16 +1689,17 @@ class CalcFlux(object):
         xmean = df[Ux].mean()
         ymean = df[Uy].mean()
         zmean = df[Uz].mean()
-        Uxy = np.sqrt(xmean ** 2 + ymean ** 2)
-        Uxyz = np.sqrt(xmean ** 2 + ymean ** 2 + zmean ** 2)
+        Uxy = np.sqrt(xmean**2 + ymean**2)
+        Uxyz = np.sqrt(xmean**2 + ymean**2 + zmean**2)
         self.cosv = xmean / Uxy
         self.sinv = ymean / Uxy
         self.sinTheta = zmean / Uxyz
         self.cosTheta = Uxy / Uxyz
         return self.cosv, self.sinv, self.sinTheta, self.cosTheta, Uxy, Uxyz
 
-    def rotate_velocity_values(self, df: pd.DataFrame = None,
-                               Ux: str = 'Ux', Uy: str = 'Uy', Uz: str = 'Uz') -> pd.DataFrame:
+    def rotate_velocity_values(
+        self, df: pd.DataFrame = None, Ux: str = "Ux", Uy: str = "Uy", Uz: str = "Uz"
+    ) -> pd.DataFrame:
         """Rotate wind velocity values
 
         Args:
@@ -1434,15 +1720,24 @@ class CalcFlux(object):
             print("Please run coord_rotation")
             pass
         else:
-            df['Uxr'] = df[Ux] * self.cosTheta * self.cosv + df[Uy] * self.cosTheta * self.sinv + df[Uz] * self.sinTheta
-            df['Uyr'] = df[Uy] * self.cosv - df[Ux] * self.sinv
-            df['Uzr'] = df[Uz] * self.cosTheta - df[Ux] * self.sinTheta * self.cosv - df[Uy] * self.sinTheta * self.sinv
+            df["Uxr"] = (
+                df[Ux] * self.cosTheta * self.cosv
+                + df[Uy] * self.cosTheta * self.sinv
+                + df[Uz] * self.sinTheta
+            )
+            df["Uyr"] = df[Uy] * self.cosv - df[Ux] * self.sinv
+            df["Uzr"] = (
+                df[Uz] * self.cosTheta
+                - df[Ux] * self.sinTheta * self.cosv
+                - df[Uy] * self.sinTheta * self.sinv
+            )
 
             self.df = df
             return df
 
-
-    def rotated_components_statistics(self, df: pd.DataFrame, Ux: str = 'Ux', Uy: str = 'Uy', Uz: str = 'Uz'):
+    def rotated_components_statistics(
+        self, df: pd.DataFrame, Ux: str = "Ux", Uy: str = "Uy", Uz: str = "Uz"
+    ):
         """Calculate the Average and Standard Deviations of the Rotated Velocity Components
 
         Args:
@@ -1459,17 +1754,23 @@ class CalcFlux(object):
         else:
             pass
 
-        self.avgvals['Uxr'] = df['Uxr'].mean()
-        self.avgvals['Uyr'] = df['Uyr'].mean()
-        self.avgvals['Uzr'] = df['Uzr'].mean()
-        self.stdvals['Uxr'] = df['Uxr'].std()
-        self.stdvals['Uyr'] = df['Uyr'].std()
-        self.stdvals['Uzr'] = df['Uzr'].std()
-        self.avgvals['Uav'] = self.avgvals['Ux'] * self.cosTheta * self.cosv + self.avgvals['Uy'] * self.cosTheta * self.sinv + self.avgvals['Uz'] * self.sinTheta
+        self.avgvals["Uxr"] = df["Uxr"].mean()
+        self.avgvals["Uyr"] = df["Uyr"].mean()
+        self.avgvals["Uzr"] = df["Uzr"].mean()
+        self.stdvals["Uxr"] = df["Uxr"].std()
+        self.stdvals["Uyr"] = df["Uyr"].std()
+        self.stdvals["Uzr"] = df["Uzr"].std()
+        self.avgvals["Uav"] = (
+            self.avgvals["Ux"] * self.cosTheta * self.cosv
+            + self.avgvals["Uy"] * self.cosTheta * self.sinv
+            + self.avgvals["Uz"] * self.sinTheta
+        )
         return
 
     def dayfrac(self, df):
-        return (df.last_valid_index() - df.first_valid_index()) / pd.to_timedelta(1, unit='D')
+        return (df.last_valid_index() - df.first_valid_index()) / pd.to_timedelta(
+            1, unit="D"
+        )
 
     def calc_covar(self, Ux, Uy, Uz, Ts, Q, pV):
         """Calculate standard covariances of primary variables
@@ -1486,9 +1787,9 @@ class CalcFlux(object):
             Saves resulting covariance to the `covar` dictionary object; ex self.covar['Ux_Ux']
         """
 
-        self.covar['Ts-Ts'] = self.calc_cov(Ts, Ts)
-        self.covar['Ux-Ux'] = self.calc_cov(Ux, Ux)
-        self.covar['Uy-Uy'] = self.calc_cov(Uy, Uy)
-        self.covar['Uz-Uy'] = self.calc_cov(Uz, Uz)
-        self.covar['Q-Q'] = self.calc_cov(Q, Q)
-        self.covar['pV-pV'] = self.calc_cov(pV, pV)
+        self.covar["Ts-Ts"] = self.calc_cov(Ts, Ts)
+        self.covar["Ux-Ux"] = self.calc_cov(Ux, Ux)
+        self.covar["Uy-Uy"] = self.calc_cov(Uy, Uy)
+        self.covar["Uz-Uy"] = self.calc_cov(Uz, Uz)
+        self.covar["Q-Q"] = self.calc_cov(Q, Q)
+        self.covar["pV-pV"] = self.calc_cov(pV, pV)

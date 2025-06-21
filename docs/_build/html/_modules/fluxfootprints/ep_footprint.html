@@ -1,0 +1,679 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fluxfootprints.ep_footprint &mdash; fluxfootprint 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=92734c54"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            fluxfootprint
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../fluxfootprints.html">fluxfootprints package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">fluxfootprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../exp.html">Flux Footprints: Key Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modeltypes.html">Outline of Flux Measurement Footprint Estimation Approaches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/footprint.html">Quick-start notebook</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">fluxfootprint</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">fluxfootprints.ep_footprint</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fluxfootprints.ep_footprint</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+
+<div class="viewcode-block" id="Footprint">
+<a class="viewcode-back" href="../../fluxfootprints.html#fluxfootprints.ep_footprint.Footprint">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Footprint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to store footprint calculation results&quot;&quot;&quot;</span>
+
+    <span class="n">peak</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Location of peak influence</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Location of 1% contribution</span>
+    <span class="n">x10</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Distance including 10% of footprint</span>
+    <span class="n">x30</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Distance including 30% of footprint</span>
+    <span class="n">x50</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Distance including 50% of footprint</span>
+    <span class="n">x70</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Distance including 70% of footprint</span>
+    <span class="n">x80</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Distance including 80% of footprint</span>
+    <span class="n">x90</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Distance including 90% of footprint</span>
+
+<div class="viewcode-block" id="Footprint.error">
+<a class="viewcode-back" href="../../fluxfootprints.html#fluxfootprints.ep_footprint.Footprint.error">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">error</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an error footprint with all values set to -9999&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="o">-</span><span class="mf">9999.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># Constants</span>
+<span class="n">ERROR</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+<span class="n">KJ_US_MIN</span> <span class="o">=</span> <span class="mf">0.2</span>  <span class="c1"># minimum ustar for Kljun model</span>
+<span class="n">KJ_ZL_MIN</span> <span class="o">=</span> <span class="o">-</span><span class="mf">200.0</span>  <span class="c1"># minimum zL for Kljun model</span>
+<span class="n">KJ_ZL_MAX</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># maximum zL for Kljun model</span>
+
+<span class="c1"># Pre-calculated L values for Kljun model (from original code)</span>
+<span class="n">L_VALUES</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="mf">0.000000</span><span class="p">,</span>
+        <span class="mf">0.302000</span><span class="p">,</span>
+        <span class="mf">0.368000</span><span class="p">,</span>
+        <span class="mf">0.414000</span><span class="p">,</span>
+        <span class="mf">0.450000</span><span class="p">,</span>
+        <span class="mf">0.482000</span><span class="p">,</span>
+        <span class="mf">0.510000</span><span class="p">,</span>
+        <span class="mf">0.536000</span><span class="p">,</span>
+        <span class="mf">0.560000</span><span class="p">,</span>
+        <span class="mf">0.579999</span><span class="p">,</span>
+        <span class="mf">0.601999</span><span class="p">,</span>
+        <span class="mf">0.621999</span><span class="p">,</span>
+        <span class="mf">0.639999</span><span class="p">,</span>
+        <span class="mf">0.657998</span><span class="p">,</span>
+        <span class="mf">0.675998</span><span class="p">,</span>
+        <span class="mf">0.691998</span><span class="p">,</span>
+        <span class="mf">0.709998</span><span class="p">,</span>
+        <span class="mf">0.725998</span><span class="p">,</span>
+        <span class="mf">0.741997</span><span class="p">,</span>
+        <span class="mf">0.755997</span><span class="p">,</span>
+        <span class="mf">0.771997</span><span class="p">,</span>
+        <span class="mf">0.785997</span><span class="p">,</span>
+        <span class="mf">0.801997</span><span class="p">,</span>
+        <span class="mf">0.815996</span><span class="p">,</span>
+        <span class="mf">0.829996</span><span class="p">,</span>
+        <span class="mf">0.843996</span><span class="p">,</span>
+        <span class="mf">0.857996</span><span class="p">,</span>
+        <span class="mf">0.871996</span><span class="p">,</span>
+        <span class="mf">0.885995</span><span class="p">,</span>
+        <span class="mf">0.899995</span><span class="p">,</span>
+        <span class="mf">0.911995</span><span class="p">,</span>
+        <span class="mf">0.925995</span><span class="p">,</span>
+        <span class="mf">0.939995</span><span class="p">,</span>
+        <span class="mf">0.953995</span><span class="p">,</span>
+        <span class="mf">0.965994</span><span class="p">,</span>
+        <span class="mf">0.979994</span><span class="p">,</span>
+        <span class="mf">0.993994</span><span class="p">,</span>
+        <span class="mf">1.005994</span><span class="p">,</span>
+        <span class="mf">1.019994</span><span class="p">,</span>
+        <span class="mf">1.033994</span><span class="p">,</span>
+        <span class="mf">1.045993</span><span class="p">,</span>
+        <span class="mf">1.059993</span><span class="p">,</span>
+        <span class="mf">1.073993</span><span class="p">,</span>
+        <span class="mf">1.085993</span><span class="p">,</span>
+        <span class="mf">1.099993</span><span class="p">,</span>
+        <span class="mf">1.113993</span><span class="p">,</span>
+        <span class="mf">1.127992</span><span class="p">,</span>
+        <span class="mf">1.141992</span><span class="p">,</span>
+        <span class="mf">1.155992</span><span class="p">,</span>
+        <span class="mf">1.169992</span><span class="p">,</span>
+        <span class="mf">1.183992</span><span class="p">,</span>
+        <span class="mf">1.197991</span><span class="p">,</span>
+        <span class="mf">1.211991</span><span class="p">,</span>
+        <span class="mf">1.225991</span><span class="p">,</span>
+        <span class="mf">1.239991</span><span class="p">,</span>
+        <span class="mf">1.253991</span><span class="p">,</span>
+        <span class="mf">1.269991</span><span class="p">,</span>
+        <span class="mf">1.283990</span><span class="p">,</span>
+        <span class="mf">1.299990</span><span class="p">,</span>
+        <span class="mf">1.315990</span><span class="p">,</span>
+        <span class="mf">1.329990</span><span class="p">,</span>
+        <span class="mf">1.345990</span><span class="p">,</span>
+        <span class="mf">1.361989</span><span class="p">,</span>
+        <span class="mf">1.379989</span><span class="p">,</span>
+        <span class="mf">1.395989</span><span class="p">,</span>
+        <span class="mf">1.411989</span><span class="p">,</span>
+        <span class="mf">1.429989</span><span class="p">,</span>
+        <span class="mf">1.447988</span><span class="p">,</span>
+        <span class="mf">1.465988</span><span class="p">,</span>
+        <span class="mf">1.483988</span><span class="p">,</span>
+        <span class="mf">1.501988</span><span class="p">,</span>
+        <span class="mf">1.521987</span><span class="p">,</span>
+        <span class="mf">1.539987</span><span class="p">,</span>
+        <span class="mf">1.559987</span><span class="p">,</span>
+        <span class="mf">1.581987</span><span class="p">,</span>
+        <span class="mf">1.601986</span><span class="p">,</span>
+        <span class="mf">1.623986</span><span class="p">,</span>
+        <span class="mf">1.647986</span><span class="p">,</span>
+        <span class="mf">1.669985</span><span class="p">,</span>
+        <span class="mf">1.693985</span><span class="p">,</span>
+        <span class="mf">1.719985</span><span class="p">,</span>
+        <span class="mf">1.745984</span><span class="p">,</span>
+        <span class="mf">1.773984</span><span class="p">,</span>
+        <span class="mf">1.801984</span><span class="p">,</span>
+        <span class="mf">1.831983</span><span class="p">,</span>
+        <span class="mf">1.863983</span><span class="p">,</span>
+        <span class="mf">1.895983</span><span class="p">,</span>
+        <span class="mf">1.931982</span><span class="p">,</span>
+        <span class="mf">1.969982</span><span class="p">,</span>
+        <span class="mf">2.009982</span><span class="p">,</span>
+        <span class="mf">2.053984</span><span class="p">,</span>
+        <span class="mf">2.101986</span><span class="p">,</span>
+        <span class="mf">2.153988</span><span class="p">,</span>
+        <span class="mf">2.211991</span><span class="p">,</span>
+        <span class="mf">2.279994</span><span class="p">,</span>
+        <span class="mf">2.355998</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="handle_footprint">
+<a class="viewcode-back" href="../../fluxfootprints.html#fluxfootprints.ep_footprint.handle_footprint">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_footprint</span><span class="p">(</span>
+    <span class="n">var_w</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">ustar</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">zL</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">wind_speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">MO_length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">sonic_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">disp_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">rough_length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">foot_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;kljun_04&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Footprint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dispatch function for selecting and computing flux footprint models.</span>
+
+<span class="sd">    This function selects an appropriate footprint model based on user input</span>
+<span class="sd">    and input parameter validity. It supports three footprint models: Kljun et al. (2004),</span>
+<span class="sd">    Kormann and Meixner (2001), and Hsieh et al. (2000). Automatically switches to a</span>
+<span class="sd">    fallback model if input constraints are violated.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    var_w : float</span>
+<span class="sd">        Variance of vertical wind speed [m² s⁻²].</span>
+<span class="sd">    ustar : float</span>
+<span class="sd">        Friction velocity [m s⁻¹].</span>
+<span class="sd">    zL : float</span>
+<span class="sd">        Stability parameter (z / L) [-].</span>
+<span class="sd">    wind_speed : float</span>
+<span class="sd">        Mean horizontal wind speed [m s⁻¹].</span>
+<span class="sd">    MO_length : float</span>
+<span class="sd">        Monin-Obukhov length [m].</span>
+<span class="sd">    sonic_height : float</span>
+<span class="sd">        Height of the sonic anemometer above ground level [m].</span>
+<span class="sd">    disp_height : float</span>
+<span class="sd">        Displacement height [m].</span>
+<span class="sd">    rough_length : float</span>
+<span class="sd">        Surface roughness length [m].</span>
+<span class="sd">    foot_model : str, optional</span>
+<span class="sd">        Footprint model to use: one of {&quot;kljun_04&quot;, &quot;kormann_meixner_01&quot;, &quot;hsieh_00&quot;}.</span>
+<span class="sd">        Defaults to &quot;kljun_04&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Footprint</span>
+<span class="sd">        A dataclass containing footprint distance metrics. Returns an error footprint</span>
+<span class="sd">        if the selected model or parameters are invalid.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    If the `&quot;kljun_04&quot;` model is selected but input values are outside its</span>
+<span class="sd">    valid range, the function automatically switches to `&quot;kormann_meixner_01&quot;`.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    kljun_04 : Analytical footprint model by Kljun et al. (2004).</span>
+<span class="sd">    kormann_meixner_01 : Footprint model by Kormann and Meixner (2001).</span>
+<span class="sd">    hsieh_00 : Footprint model by Hsieh et al. (2000).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">foot_model</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Footprint</span><span class="o">.</span><span class="n">error</span><span class="p">()</span>
+
+    <span class="c1"># If Kljun model conditions not met, switch to Kormann and Meixner</span>
+    <span class="k">if</span> <span class="n">foot_model</span> <span class="o">==</span> <span class="s2">&quot;kljun&quot;</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">var_w</span> <span class="o">&lt;=</span> <span class="mf">0.0</span>
+        <span class="ow">or</span> <span class="n">ustar</span> <span class="o">&lt;</span> <span class="n">KJ_US_MIN</span>
+        <span class="ow">or</span> <span class="n">zL</span> <span class="o">&lt;</span> <span class="n">KJ_ZL_MIN</span>
+        <span class="ow">or</span> <span class="n">zL</span> <span class="o">&gt;</span> <span class="n">KJ_ZL_MAX</span>
+        <span class="ow">or</span> <span class="n">sonic_height</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+    <span class="p">):</span>
+        <span class="n">foot_model</span> <span class="o">=</span> <span class="s2">&quot;kormann_meixner&quot;</span>
+
+    <span class="c1"># Calculate std_w</span>
+    <span class="n">std_w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var_w</span><span class="p">)</span> <span class="k">if</span> <span class="n">var_w</span> <span class="o">&gt;=</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="n">ERROR</span>
+
+    <span class="k">if</span> <span class="n">foot_model</span> <span class="o">==</span> <span class="s2">&quot;kljun&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">kljun</span><span class="p">(</span><span class="n">std_w</span><span class="p">,</span> <span class="n">ustar</span><span class="p">,</span> <span class="n">zL</span><span class="p">,</span> <span class="n">sonic_height</span><span class="p">,</span> <span class="n">disp_height</span><span class="p">,</span> <span class="n">rough_length</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">foot_model</span> <span class="o">==</span> <span class="s2">&quot;kormann_meixner&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">kormann_meixner</span><span class="p">(</span><span class="n">ustar</span><span class="p">,</span> <span class="n">zL</span><span class="p">,</span> <span class="n">wind_speed</span><span class="p">,</span> <span class="n">sonic_height</span><span class="p">,</span> <span class="n">disp_height</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">foot_model</span> <span class="o">==</span> <span class="s2">&quot;hsieh&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">hsieh</span><span class="p">(</span><span class="n">MO_length</span><span class="p">,</span> <span class="n">sonic_height</span><span class="p">,</span> <span class="n">disp_height</span><span class="p">,</span> <span class="n">rough_length</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Footprint</span><span class="o">.</span><span class="n">error</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="kljun">
+<a class="viewcode-back" href="../../fluxfootprints.html#fluxfootprints.ep_footprint.kljun">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">kljun</span><span class="p">(</span>
+    <span class="n">std_w</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">ustar</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">zL</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">sonic_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">disp_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">rough_length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Footprint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate footprint characteristics using the Kljun et al. (2004) parameterization.</span>
+
+<span class="sd">    This function computes footprint distances corresponding to peak and cumulative</span>
+<span class="sd">    source area contributions (1–90%) using the analytical model from Kljun et al. (2004,</span>
+<span class="sd">    Boundary-Layer Meteorology). It assumes steady-state, horizontally homogeneous</span>
+<span class="sd">    turbulence and neutral to moderately stable or unstable atmospheric conditions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    std_w : float</span>
+<span class="sd">        Standard deviation of vertical velocity fluctuations [m s⁻¹].</span>
+<span class="sd">    ustar : float</span>
+<span class="sd">        Friction velocity [m s⁻¹].</span>
+<span class="sd">    zL : float</span>
+<span class="sd">        Stability parameter (z / L), where L is the Obukhov length [-].</span>
+<span class="sd">    sonic_height : float</span>
+<span class="sd">        Height of the sonic anemometer above ground level [m].</span>
+<span class="sd">    disp_height : float</span>
+<span class="sd">        Displacement height (zero-plane displacement) [m].</span>
+<span class="sd">    rough_length : float</span>
+<span class="sd">        Surface roughness length [m].</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Footprint</span>
+<span class="sd">        A dataclass containing the peak location and distances at which 1%, 10%, 30%, 50%,</span>
+<span class="sd">        70%, 80%, and 90% of the footprint is accumulated. Returns an error footprint</span>
+<span class="sd">        if inputs are invalid.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The model is valid for:</span>
+<span class="sd">    - 0.01 &lt; z/L &lt; 15</span>
+<span class="sd">    - u* ≥ 0.21 m s⁻¹</span>
+<span class="sd">    - z - d &gt; 1.0 m</span>
+<span class="sd">    - z₀ &gt; 0</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Kljun, N., Calanca, P., Rotach, M. W., &amp; Schmid, H. P. (2004).</span>
+<span class="sd">    A simple parameterisation for flux footprint predictions.</span>
+<span class="sd">    Boundary-Layer Meteorology, 112(3), 503–523. https://doi.org/10.1023/B:BOUN.0000030653.71031.96</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize to error</span>
+    <span class="k">if</span> <span class="n">std_w</span> <span class="o">==</span> <span class="n">ERROR</span> <span class="ow">or</span> <span class="n">ustar</span> <span class="o">&lt;</span> <span class="n">KJ_US_MIN</span> <span class="ow">or</span> <span class="n">zL</span> <span class="o">&lt;</span> <span class="n">KJ_ZL_MIN</span> <span class="ow">or</span> <span class="n">zL</span> <span class="o">&gt;</span> <span class="n">KJ_ZL_MAX</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Footprint</span><span class="o">.</span><span class="n">error</span><span class="p">()</span>
+
+    <span class="c1"># Height above displacement height</span>
+    <span class="n">zm</span> <span class="o">=</span> <span class="n">sonic_height</span> <span class="o">-</span> <span class="n">disp_height</span>
+    <span class="k">if</span> <span class="n">zm</span> <span class="o">&lt;</span> <span class="mf">1.0</span> <span class="ow">or</span> <span class="n">rough_length</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Footprint</span><span class="o">.</span><span class="n">error</span><span class="p">()</span>
+
+    <span class="c1"># Calculate parameters depending only on z0 (Eq. 13-16 in Kljun et al. 2004)</span>
+    <span class="n">af</span> <span class="o">=</span> <span class="mf">0.175</span>
+    <span class="n">bb</span> <span class="o">=</span> <span class="mf">3.418</span>
+    <span class="n">ac</span> <span class="o">=</span> <span class="mf">4.277</span>
+    <span class="n">ad</span> <span class="o">=</span> <span class="mf">1.685</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mf">3.69895</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="n">af</span> <span class="o">/</span> <span class="p">(</span><span class="n">bb</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">rough_length</span><span class="p">))</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">ac</span> <span class="o">*</span> <span class="p">(</span><span class="n">bb</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">rough_length</span><span class="p">))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">ad</span> <span class="o">*</span> <span class="p">(</span><span class="n">bb</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">rough_length</span><span class="p">))</span>
+
+    <span class="c1"># Calculate footprint characteristics</span>
+    <span class="n">scaling</span> <span class="o">=</span> <span class="n">zm</span> <span class="o">*</span> <span class="p">(</span><span class="n">std_w</span> <span class="o">/</span> <span class="n">ustar</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.8</span><span class="p">)</span>
+
+    <span class="c1"># Location of peak influence</span>
+    <span class="n">xstarmax</span> <span class="o">=</span> <span class="n">c</span> <span class="o">-</span> <span class="n">d</span>
+    <span class="n">peak</span> <span class="o">=</span> <span class="n">xstarmax</span> <span class="o">*</span> <span class="n">scaling</span>
+
+    <span class="c1"># Calculate distances including increasing percentages of the footprint</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calc_distance</span><span class="p">(</span><span class="n">L_value</span><span class="p">):</span>
+        <span class="n">xstar</span> <span class="o">=</span> <span class="n">L_value</span> <span class="o">*</span> <span class="n">c</span> <span class="o">-</span> <span class="n">d</span>
+        <span class="k">return</span> <span class="n">xstar</span> <span class="o">*</span> <span class="n">scaling</span>
+
+    <span class="k">return</span> <span class="n">Footprint</span><span class="p">(</span>
+        <span class="n">peak</span><span class="o">=</span><span class="n">peak</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>  <span class="c1"># 1% contribution</span>
+        <span class="n">x10</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">10</span><span class="p">]),</span>  <span class="c1"># 10% contribution</span>
+        <span class="n">x30</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">30</span><span class="p">]),</span>  <span class="c1"># 30% contribution</span>
+        <span class="n">x50</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">50</span><span class="p">]),</span>  <span class="c1"># 50% contribution</span>
+        <span class="n">x70</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">70</span><span class="p">]),</span>  <span class="c1"># 70% contribution</span>
+        <span class="n">x80</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">80</span><span class="p">]),</span>  <span class="c1"># 80% contribution</span>
+        <span class="n">x90</span><span class="o">=</span><span class="n">calc_distance</span><span class="p">(</span><span class="n">L_VALUES</span><span class="p">[</span><span class="mi">90</span><span class="p">]),</span>  <span class="c1"># 90% contribution</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="kormann_meixner">
+<a class="viewcode-back" href="../../fluxfootprints.html#fluxfootprints.ep_footprint.kormann_meixner">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">kormann_meixner</span><span class="p">(</span>
+    <span class="n">ustar</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">zL</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">wind_speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sonic_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">disp_height</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Footprint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate footprint characteristics using the Kormann and Meixner (2001) analytical model.</span>
+
+<span class="sd">    This function computes the location of peak flux contribution and source area distances</span>
+<span class="sd">    corresponding to cumulative contributions of 1–90% using the model described by</span>
+<span class="sd">    Kormann and Meixner (2001). It integrates a 1D crosswind-integrated footprint function</span>
+<span class="sd">    derived from power-law profiles of wind speed and eddy diffusivity.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ustar : float</span>
+<span class="sd">        Friction velocity [m s⁻¹].</span>
+<span class="sd">    zL : float</span>
+<span class="sd">        Stability parameter (z / L) [-].</span>
+<span class="sd">    wind_speed : float</span>
+<span class="sd">        Mean horizontal wind speed at measurement height [m s⁻¹].</span>
+<span class="sd">    sonic_height : float</span>
+<span class="sd">        Height of the sonic anemometer above ground level [m].</span>
+<span class="sd">    disp_height : float</span>
+<span class="sd">        Displacement height [m].</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Footprint</span>
+<span class="sd">        A dataclass containing the peak location and distances at which 1%, 10%, 30%, 50%,</span>
+<span class="sd">        70%, 80%, and 90% of the footprint is accumulated.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - Applies Monin-Obukhov similarity theory for stability correction.</span>
+<span class="sd">    - Assumes horizontally homogeneous surface conditions and power-law profiles for both</span>
+<span class="sd">      eddy diffusivity and wind speed.</span>
+<span class="sd">    - Integration is terminated at 90% cumulative contribution.</span>
+<span class="sd">    - For unstable conditions (z/L &lt; 0), non-linear stability corrections are applied via</span>
+<span class="sd">      Paulson (1970) similarity functions.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Kormann, R., &amp; Meixner, F. X. (2001).</span>
+<span class="sd">    An analytical footprint model for non-neutral stratification.</span>
+<span class="sd">    Boundary-Layer Meteorology, 99(2), 207–224. https://doi.org/10.1023/A:1018991015119</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># von Karman constant</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mf">0.41</span>
+
+    <span class="c1"># Height above displacement height</span>
+    <span class="n">zm</span> <span class="o">=</span> <span class="n">sonic_height</span> <span class="o">-</span> <span class="n">disp_height</span>
+
+    <span class="c1"># Calculate similarity relations (Paulson, 1970)</span>
+    <span class="k">if</span> <span class="n">zL</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Stable conditions</span>
+        <span class="n">phi_m</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="mf">5.0</span> <span class="o">*</span> <span class="n">zL</span>
+        <span class="n">phi_c</span> <span class="o">=</span> <span class="n">phi_m</span>
+        <span class="n">psi_m</span> <span class="o">=</span> <span class="o">-</span><span class="mf">5.0</span> <span class="o">*</span> <span class="n">zL</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Unstable conditions</span>
+        <span class="n">phi_m</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">16.0</span> <span class="o">*</span> <span class="n">zL</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">)</span>
+        <span class="n">phi_c</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">16.0</span> <span class="o">*</span> <span class="n">zL</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+        <span class="n">eta</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">16.0</span> <span class="o">*</span> <span class="n">zL</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">)</span>
+        <span class="n">psi_m</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">eta</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">eta</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+            <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Change sign to conform with K&amp;M usage</span>
+    <span class="n">psi_m</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">psi_m</span>
+
+    <span class="c1"># Calculate intermediate parameters</span>
+    <span class="c1"># Exponent of the diffusivity power law</span>
+    <span class="k">if</span> <span class="n">zL</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">phi_m</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">24.0</span> <span class="o">*</span> <span class="n">zL</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">16.0</span> <span class="o">*</span> <span class="n">zL</span><span class="p">)</span>
+
+    <span class="c1"># Proportionality constant of the diffusivity power law (Eqs. 11 and 32)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">ustar</span> <span class="o">*</span> <span class="n">zm</span> <span class="o">/</span> <span class="p">(</span><span class="n">phi_c</span> <span class="o">*</span> <span class="n">zm</span><span class="o">**</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="c1"># Exponent of the wind speed power law</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">ustar</span> <span class="o">*</span> <span class="n">phi_m</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">wind_speed</span><span class="p">)</span>
+
+    <span class="c1"># Proportionality constant of the wind speed power law</span>
+    <span class="n">U</span> <span class="o">=</span> <span class="n">wind_speed</span> <span class="o">/</span> <span class="n">zm</span><span class="o">**</span><span class="n">m</span>
+
+    <span class="c1"># Intermediate parameters</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="n">m</span> <span class="o">-</span> <span class="n">n</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="n">r</span>
+    <span class="n">zeta</span> <span class="o">=</span> <span class="n">U</span> <span class="o">*</span> <span class="n">zm</span><span class="o">**</span><span class="n">r</span> <span class="o">/</span> <span class="p">(</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="c1"># Initialize footprint calculation variables</span>
+    <span class="n">distances</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># Integration step</span>
+
+    <span class="c1"># Arrays to store percentage contributions</span>
+    <span class="n">target_percentages</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+    <span class="n">found_distances</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_percentages</span><span class="p">)</span>
+
+    <span class="c1"># Calculate peak location</span>
+    <span class="n">x_peak</span> <span class="o">=</span> <span class="n">zeta</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span>
+
+    <span class="c1"># Integration loop</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10001</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">dx</span>
+        <span class="c1"># Cross-wind integrated 1D function (gamma function approximation)</span>
+        <span class="n">contribution</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">zeta</span><span class="o">**</span><span class="n">mu</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">zeta</span> <span class="o">/</span> <span class="n">x</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">integral</span> <span class="o">+=</span> <span class="n">contribution</span> <span class="o">*</span> <span class="n">dx</span>
+
+        <span class="c1"># Check if we&#39;ve reached each target percentage</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">target_percentages</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">found_distances</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">integral</span> <span class="o">&gt;</span> <span class="n">target</span><span class="p">:</span>
+                <span class="n">found_distances</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="c1"># Exit if we&#39;ve found all percentages</span>
+        <span class="k">if</span> <span class="n">integral</span> <span class="o">&gt;</span> <span class="mf">0.9</span><span class="p">:</span>  <span class="c1"># 90% is our maximum target</span>
+            <span class="k">break</span>
+
+    <span class="c1"># Create footprint object</span>
+    <span class="k">return</span> <span class="n">Footprint</span><span class="p">(</span>
+        <span class="n">peak</span><span class="o">=</span><span class="n">x_peak</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>  <span class="c1"># 1% contribution</span>
+        <span class="n">x10</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>  <span class="c1"># 10% contribution</span>
+        <span class="n">x30</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>  <span class="c1"># 30% contribution</span>
+        <span class="n">x50</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>  <span class="c1"># 50% contribution</span>
+        <span class="n">x70</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>  <span class="c1"># 70% contribution</span>
+        <span class="n">x80</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>  <span class="c1"># 80% contribution</span>
+        <span class="n">x90</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span>  <span class="c1"># 90% contribution</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="hsieh">
+<a class="viewcode-back" href="../../fluxfootprints.html#fluxfootprints.ep_footprint.hsieh">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">hsieh</span><span class="p">(</span>
+    <span class="n">MO_length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sonic_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">disp_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rough_length</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Footprint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate footprint characteristics using the Hsieh et al. (2000) model.</span>
+
+<span class="sd">    This function implements the analytical footprint model developed by</span>
+<span class="sd">    Hsieh et al. (2000), based on Monin-Obukhov similarity theory and a</span>
+<span class="sd">    stability-dependent formulation. It calculates the peak flux contribution</span>
+<span class="sd">    distance and footprint extents based on integrated contributions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    MO_length : float</span>
+<span class="sd">        Monin-Obukhov length [m].</span>
+<span class="sd">    sonic_height : float</span>
+<span class="sd">        Height of the sonic anemometer above ground level [m].</span>
+<span class="sd">    disp_height : float</span>
+<span class="sd">        Displacement height [m].</span>
+<span class="sd">    rough_length : float</span>
+<span class="sd">        Surface roughness length [m].</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Footprint</span>
+<span class="sd">        A dataclass containing the peak location and distances at which 1%, 10%, 30%, 50%,</span>
+<span class="sd">        70%, 80%, and 90% of the footprint is accumulated.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - The model distinguishes between stable, unstable, and neutral atmospheric conditions</span>
+<span class="sd">      using the stability parameter zL = zu / L.</span>
+<span class="sd">    - `zu` is a derived scaling height incorporating roughness and log-profile assumptions.</span>
+<span class="sd">    - Integration is performed over 1D footprint function values to estimate distance thresholds.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Hsieh, C.-I., Katul, G., &amp; Chi, T.-W. (2000).</span>
+<span class="sd">    An analytical model for estimating the footprint of turbulent fluxes in</span>
+<span class="sd">    thermally stratified atmospheric flows.</span>
+<span class="sd">    Journal of Geophysical Research: Atmospheres, 105(D8), 9651–9664.</span>
+<span class="sd">    https://doi.org/10.1029/2000JD900052</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># von Karman constant</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mf">0.41</span>
+
+    <span class="c1"># Calculate measurement height above displacement</span>
+    <span class="n">zm</span> <span class="o">=</span> <span class="n">sonic_height</span> <span class="o">-</span> <span class="n">disp_height</span>
+
+    <span class="c1"># Calculate zu parameter (Eq. 8 in Hsieh et al. 2000)</span>
+    <span class="n">zu</span> <span class="o">=</span> <span class="n">zm</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">zm</span> <span class="o">/</span> <span class="n">rough_length</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">rough_length</span> <span class="o">/</span> <span class="n">zm</span><span class="p">)</span>
+
+    <span class="c1"># Calculate stability parameter</span>
+    <span class="n">zL</span> <span class="o">=</span> <span class="n">zu</span> <span class="o">/</span> <span class="n">MO_length</span>
+
+    <span class="c1"># Set parameters D and P based on stability conditions (Eq. 17)</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">zL</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.04</span><span class="p">:</span>
+        <span class="c1"># Neutral and near-neutral conditions</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="mf">0.97</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">elif</span> <span class="n">zL</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># Unstable conditions</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="mf">0.28</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="mf">0.59</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Stable conditions</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="mf">2.44</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="mf">1.33</span>
+
+    <span class="c1"># Calculate peak distance (maximum source location)</span>
+    <span class="n">x_peak</span> <span class="o">=</span> <span class="n">D</span> <span class="o">*</span> <span class="n">zu</span><span class="o">**</span><span class="n">P</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">MO_length</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">P</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">k</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># Initialize variables for integration</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="mf">5.0</span>  <span class="c1"># Integration step size</span>
+    <span class="n">target_percentages</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>
+    <span class="n">found_distances</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_percentages</span><span class="p">)</span>
+
+    <span class="c1"># Integration loop</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10001</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">dx</span>
+
+        <span class="c1"># Calculate crosswind-integrated footprint function</span>
+        <span class="n">fact</span> <span class="o">=</span> <span class="n">D</span> <span class="o">*</span> <span class="n">zu</span><span class="o">**</span><span class="n">P</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">MO_length</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">P</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">k</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">fact</span><span class="p">)</span>
+
+        <span class="c1"># Check if we&#39;ve reached each target percentage</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">target_percentages</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">found_distances</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="n">target</span><span class="p">:</span>
+                <span class="n">found_distances</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="c1"># Exit if we&#39;ve found all percentages</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mf">0.9</span><span class="p">:</span>  <span class="c1"># 90% is our maximum target</span>
+            <span class="k">break</span>
+
+    <span class="c1"># Create and return Footprint object</span>
+    <span class="k">return</span> <span class="n">Footprint</span><span class="p">(</span>
+        <span class="n">peak</span><span class="o">=</span><span class="n">x_peak</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>  <span class="c1"># 1% contribution</span>
+        <span class="n">x10</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>  <span class="c1"># 10% contribution</span>
+        <span class="n">x30</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>  <span class="c1"># 30% contribution</span>
+        <span class="n">x50</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>  <span class="c1"># 50% contribution</span>
+        <span class="n">x70</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>  <span class="c1"># 70% contribution</span>
+        <span class="n">x80</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>  <span class="c1"># 80% contribution</span>
+        <span class="n">x90</span><span class="o">=</span><span class="n">found_distances</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span>  <span class="c1"># 90% contribution</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Inkenbrandt, Natascha Kljun, John Volk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

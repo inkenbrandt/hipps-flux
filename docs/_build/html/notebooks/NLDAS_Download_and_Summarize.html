@@ -1,0 +1,809 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download NLDAS Data &mdash; fluxfootprint 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=92734c54"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            fluxfootprint
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fluxfootprints.html">fluxfootprints package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">fluxfootprints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../exp.html">Flux Footprints: Key Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modeltypes.html">Outline of Flux Measurement Footprint Estimation Approaches</a></li>
+<li class="toctree-l1"><a class="reference internal" href="footprint.html">Quick-start notebook</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">fluxfootprint</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Download NLDAS Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/NLDAS_Download_and_Summarize.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Download-NLDAS-Data">
+<h1>Download NLDAS Data<a class="headerlink" href="#Download-NLDAS-Data" title="Link to this heading"></a></h1>
+<section id="Import-Dependencies">
+<h2>Import Dependencies<a class="headerlink" href="#Import-Dependencies" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">configparser</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">micromet</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;../../src&quot;</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fluxfootprints</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">spath</span> <span class="o">=</span> <span class="s2">&quot;../../secrets/config.ini&quot;</span>
+<span class="n">sconfig</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+<span class="n">sconfig</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">spath</span><span class="p">)</span>
+
+<span class="n">ed_pass</span> <span class="o">=</span> <span class="n">sconfig</span><span class="p">[</span><span class="s1">&#39;NLDAS&#39;</span><span class="p">][</span><span class="s1">&#39;pw&#39;</span><span class="p">]</span>
+<span class="n">ed_user</span> <span class="o">=</span> <span class="n">sconfig</span><span class="p">[</span><span class="s1">&#39;NLDAS&#39;</span><span class="p">][</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>To use this part of the module, you must register with the <a class="reference external" href="https://urs.earthdata.nasa.gov/home">NASA Earthdata Login Page</a>. The example below downloads hourly data from the site for North America.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+
+<span class="c1">#nldas_out_dir = Path(&#39;C:/Users/paulinkenbrandt/Documents/GitHub/MicroMet/Notebooks/Footprints&#39;)</span>
+
+
+<span class="k">for</span> <span class="n">date</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;2021-01-01&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;2021-01-02&#39;</span><span class="p">,</span><span class="n">freq</span><span class="o">=</span><span class="s1">&#39;h&#39;</span><span class="p">):</span>
+    <span class="n">hour</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">hour</span>
+    <span class="n">fluxfootprints</span><span class="o">.</span><span class="n">download_nldas</span><span class="p">(</span><span class="n">date</span><span class="p">,</span>
+                           <span class="n">hour</span><span class="p">,</span>
+                           <span class="n">ed_user</span><span class="p">,</span>
+                           <span class="n">ed_pass</span><span class="p">,)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+NLDAS_data\2021_01_01_00.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_01.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_02.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_03.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_04.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_05.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_06.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_07.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_08.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_09.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_10.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_11.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_12.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_13.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_14.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_15.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_16.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_17.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_18.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_19.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_20.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_21.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_22.nc already exists, not overwriting.
+NLDAS_data\2021_01_01_23.nc already exists, not overwriting.
+NLDAS_data\2021_01_02_00.nc already exists, not overwriting.
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the NetCDF file</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="s2">&quot;./NLDAS_data/2021_01_01_00.nc&quot;</span><span class="p">)</span>
+
+<span class="c1"># Inspect the dataset structure</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+<span class="n">var</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">&#39;PotEvap&#39;</span><span class="p">]</span>
+
+<span class="c1"># Plot a 2D slice (e.g., first time step if it has a time dimension)</span>
+<span class="n">var</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;xarray.Dataset&gt; Size: 5MB
+Dimensions:      (lon: 464, lat: 224, time: 1, bnds: 2)
+Coordinates:
+  * lon          (lon) float32 2kB -124.9 -124.8 -124.7 ... -67.31 -67.19 -67.06
+  * lat          (lat) float32 896B 25.06 25.19 25.31 ... 52.69 52.81 52.94
+  * time         (time) datetime64[ns] 8B 2021-01-01
+Dimensions without coordinates: bnds
+Data variables:
+    time_bnds    (time, bnds) datetime64[ns] 16B ...
+    Tair         (time, lat, lon) float32 416kB ...
+    Qair         (time, lat, lon) float32 416kB ...
+    PSurf        (time, lat, lon) float32 416kB ...
+    Wind_E       (time, lat, lon) float32 416kB ...
+    Wind_N       (time, lat, lon) float32 416kB ...
+    LWdown       (time, lat, lon) float32 416kB ...
+    CRainf_frac  (time, lat, lon) float32 416kB ...
+    CAPE         (time, lat, lon) float32 416kB ...
+    PotEvap      (time, lat, lon) float32 416kB ...
+    Rainf        (time, lat, lon) float32 416kB ...
+    SWdown       (time, lat, lon) float32 416kB ...
+Attributes: (12/17)
+    missing_value:          -9999.0
+    time_definition:        hourly
+    shortname:              NLDAS_FORA0125_H_2.0
+    title:                  NLDAS Primary Forcing Data L4 Hourly 0.125 x 0.12...
+    version:                2.0
+    institution:            NASA GSFC
+    ...                     ...
+    websites:               https://ldas.gsfc.nasa.gov/nldas/ ; https://lis.g...
+    MAP_PROJECTION:         EQUIDISTANT CYLINDRICAL
+    SOUTH_WEST_CORNER_LAT:  25.0625
+    SOUTH_WEST_CORNER_LON:  -124.9375
+    DX:                     0.125
+    DY:                     0.125
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.QuadMesh at 0x20454720550&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_NLDAS_Download_and_Summarize_7_2.png" src="../_images/notebooks_NLDAS_Download_and_Summarize_7_2.png" />
+</div>
+</div>
+<p>This function clips the downloaded data to the boundaries of Utah (USA), and lumps the data into efficient file formats labeled by year.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fluxfootprints</span><span class="o">.</span><span class="n">clip_to_utah_merge</span><span class="p">(</span><span class="n">file_dir</span><span class="o">=</span><span class="s2">&quot;./NLDAS_data/&quot;</span><span class="p">,</span> <span class="n">years</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2021</span><span class="p">])</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2021
+NLDAS_data\2021_01_01_00.nc
+NLDAS_data\2021_01_01_01.nc
+NLDAS_data\2021_01_01_02.nc
+NLDAS_data\2021_01_01_03.nc
+NLDAS_data\2021_01_01_04.nc
+NLDAS_data\2021_01_01_05.nc
+NLDAS_data\2021_01_01_06.nc
+NLDAS_data\2021_01_01_07.nc
+NLDAS_data\2021_01_01_08.nc
+NLDAS_data\2021_01_01_09.nc
+NLDAS_data\2021_01_01_10.nc
+NLDAS_data\2021_01_01_11.nc
+NLDAS_data\2021_01_01_12.nc
+NLDAS_data\2021_01_01_13.nc
+NLDAS_data\2021_01_01_14.nc
+NLDAS_data\2021_01_01_15.nc
+NLDAS_data\2021_01_01_16.nc
+NLDAS_data\2021_01_01_17.nc
+NLDAS_data\2021_01_01_18.nc
+NLDAS_data\2021_01_01_19.nc
+NLDAS_data\2021_01_01_20.nc
+NLDAS_data\2021_01_01_21.nc
+NLDAS_data\2021_01_01_22.nc
+NLDAS_data\2021_01_01_23.nc
+NLDAS_data\2021_01_02_00.nc
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">KeyError</span>                                  Traceback (most recent call last)
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\file_manager.py:211</span>, in <span class="ansi-cyan-fg">CachingFileManager._acquire_with_cache_info</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    210</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 211</span>     file <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_cache</span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_key</span><span class="ansi-yellow-bg">]</span>
+<span class="ansi-green-fg">    212</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">KeyError</span>:
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\lru_cache.py:56</span>, in <span class="ansi-cyan-fg">LRUCache.__getitem__</span><span class="ansi-blue-intense-fg ansi-bold">(self, key)</span>
+<span class="ansi-green-fg">     55</span> <span class="ansi-bold" style="color: rgb(0,135,0)">with</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_lock:
+<span class="ansi-green-intense-fg ansi-bold">---&gt; 56</span>     value <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_cache</span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg">key</span><span class="ansi-yellow-bg">]</span>
+<span class="ansi-green-fg">     57</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_cache<span style="color: rgb(98,98,98)">.</span>move_to_end(key)
+
+<span class="ansi-red-intense-fg ansi-bold">KeyError</span>: [&lt;class &#39;netCDF4._netCDF4.Dataset&#39;&gt;, (&#39;c:\\Users\\paulinkenbrandt\\Documents\\GitHub\\footprints\\docs\\notebooks\\2021_utah_merged.nc&#39;,), &#39;a&#39;, ((&#39;clobber&#39;, True), (&#39;diskless&#39;, False), (&#39;format&#39;, &#39;NETCDF4&#39;), (&#39;persist&#39;, False)), &#39;3d76a718-13bf-4c88-98bc-43cf7e6189ef&#39;]
+
+During handling of the above exception, another exception occurred:
+
+<span class="ansi-red-intense-fg ansi-bold">PermissionError</span>                           Traceback (most recent call last)
+Cell <span class="ansi-green-intense-fg ansi-bold">In[38], line 1</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span> <span class="ansi-yellow-bg">fluxfootprints</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">clip_to_utah_merge</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">file_dir</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">./NLDAS_data/</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">years</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">2021</span><span class="ansi-yellow-bg">]</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\Documents\GitHub\footprints\docs\notebooks\../../src\fluxfootprints\volk.py:707</span>, in <span class="ansi-cyan-fg">clip_to_utah_merge</span><span class="ansi-blue-intense-fg ansi-bold">(file_dir, years, output_dir)</span>
+<span class="ansi-green-fg">    705</span> <span style="color: rgb(95,135,135)"># Save as NetCDF using a compatible format (default for xarray in this environment)</span>
+<span class="ansi-green-fg">    706</span> netcdf_output_path <span style="color: rgb(98,98,98)">=</span> output_dir <span style="color: rgb(98,98,98)">/</span> <span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">&#34;</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>year<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">_utah_merged.nc</span><span style="color: rgb(175,0,0)">&#34;</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 707</span> <span class="ansi-yellow-bg">ds_merged</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">to_netcdf</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">netcdf_output_path</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    709</span> <span style="color: rgb(95,135,135)"># Convert to Pandas DataFrame for Parquet format</span>
+<span class="ansi-green-fg">    710</span> df_parquet <span style="color: rgb(98,98,98)">=</span> ds_merged<span style="color: rgb(98,98,98)">.</span>to_dataframe()<span style="color: rgb(98,98,98)">.</span>reset_index()
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\core\dataset.py:2380</span>, in <span class="ansi-cyan-fg">Dataset.to_netcdf</span><span class="ansi-blue-intense-fg ansi-bold">(self, path, mode, format, group, engine, encoding, unlimited_dims, compute, invalid_netcdf, auto_complex)</span>
+<span class="ansi-green-fg">   2377</span>     encoding <span style="color: rgb(98,98,98)">=</span> {}
+<span class="ansi-green-fg">   2378</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,0,255)">xarray</span><span class="ansi-bold" style="color: rgb(0,0,255)">.</span><span class="ansi-bold" style="color: rgb(0,0,255)">backends</span><span class="ansi-bold" style="color: rgb(0,0,255)">.</span><span class="ansi-bold" style="color: rgb(0,0,255)">api</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">import</span> to_netcdf
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 2380</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">to_netcdf</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">  </span><span class="ansi-yellow-bg" style="color: rgb(95,135,135)"># type: ignore[return-value]  # mypy cannot resolve the overloads:(</span>
+<span class="ansi-green-fg">   2381</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2382</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">path</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2383</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2384</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">format</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">format</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2385</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2386</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">engine</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">engine</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2387</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">encoding</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">encoding</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2388</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">unlimited_dims</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">unlimited_dims</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2389</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">compute</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">compute</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2390</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">multifile</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(0,135,0)">False</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2391</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">invalid_netcdf</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">invalid_netcdf</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2392</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">auto_complex</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">auto_complex</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2393</span> <span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\api.py:1911</span>, in <span class="ansi-cyan-fg">to_netcdf</span><span class="ansi-blue-intense-fg ansi-bold">(dataset, path_or_file, mode, format, group, engine, encoding, unlimited_dims, compute, multifile, invalid_netcdf, auto_complex)</span>
+<span class="ansi-green-fg">   1908</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> auto_complex <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-fg">   1909</span>     kwargs[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">auto_complex</span><span style="color: rgb(175,0,0)">&#34;</span>] <span style="color: rgb(98,98,98)">=</span> auto_complex
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1911</span> store <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">store_open</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">target</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">format</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">   1913</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> unlimited_dims <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-fg">   1914</span>     unlimited_dims <span style="color: rgb(98,98,98)">=</span> dataset<span style="color: rgb(98,98,98)">.</span>encoding<span style="color: rgb(98,98,98)">.</span>get(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">unlimited_dims</span><span style="color: rgb(175,0,0)">&#34;</span>, <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>)
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:452</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore.open</span><span class="ansi-blue-intense-fg ansi-bold">(cls, filename, mode, format, group, clobber, diskless, persist, auto_complex, lock, lock_maker, autoclose)</span>
+<span class="ansi-green-fg">    448</span>     kwargs[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">auto_complex</span><span style="color: rgb(175,0,0)">&#34;</span>] <span style="color: rgb(98,98,98)">=</span> auto_complex
+<span class="ansi-green-fg">    449</span> manager <span style="color: rgb(98,98,98)">=</span> CachingFileManager(
+<span class="ansi-green-fg">    450</span>     netCDF4<span style="color: rgb(98,98,98)">.</span>Dataset, filename, mode<span style="color: rgb(98,98,98)">=</span>mode, kwargs<span style="color: rgb(98,98,98)">=</span>kwargs
+<span class="ansi-green-fg">    451</span> )
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 452</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">cls</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">manager</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">lock</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">lock</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">autoclose</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">autoclose</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:393</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, manager, group, mode, lock, autoclose)</span>
+<span class="ansi-green-fg">    391</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_group <span style="color: rgb(98,98,98)">=</span> group
+<span class="ansi-green-fg">    392</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode <span style="color: rgb(98,98,98)">=</span> mode
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 393</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>format <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">ds</span><span style="color: rgb(98,98,98)">.</span>data_model
+<span class="ansi-green-fg">    394</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_filename <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>ds<span style="color: rgb(98,98,98)">.</span>filepath()
+<span class="ansi-green-fg">    395</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>is_remote <span style="color: rgb(98,98,98)">=</span> is_remote_uri(<span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_filename)
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:461</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore.ds</span><span class="ansi-blue-intense-fg ansi-bold">(self)</span>
+<span class="ansi-green-fg">    459</span> <span style="color: rgb(175,0,255)">@property</span>
+<span class="ansi-green-fg">    460</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">ds</span>(<span style="color: rgb(0,135,0)">self</span>):
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 461</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_acquire</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:455</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore._acquire</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    454</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">_acquire</span>(<span style="color: rgb(0,135,0)">self</span>, needs_lock<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">True</span>):
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 455</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">with</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_manager<span style="color: rgb(98,98,98)">.</span>acquire_context(needs_lock) <span class="ansi-bold" style="color: rgb(0,135,0)">as</span> root:
+<span class="ansi-green-fg">    456</span>         ds <span style="color: rgb(98,98,98)">=</span> _nc4_require_group(root, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_group, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode)
+<span class="ansi-green-fg">    457</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> ds
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\contextlib.py:141</span>, in <span class="ansi-cyan-fg">_GeneratorContextManager.__enter__</span><span class="ansi-blue-intense-fg ansi-bold">(self)</span>
+<span class="ansi-green-fg">    139</span> <span class="ansi-bold" style="color: rgb(0,135,0)">del</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>args, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>kwds, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>func
+<span class="ansi-green-fg">    140</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 141</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">next</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">gen</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    142</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">StopIteration</span>:
+<span class="ansi-green-fg">    143</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">RuntimeError</span>(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">generator didn</span><span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">t yield</span><span style="color: rgb(175,0,0)">&#34;</span>) <span class="ansi-bold" style="color: rgb(0,135,0)">from</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\file_manager.py:199</span>, in <span class="ansi-cyan-fg">CachingFileManager.acquire_context</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    196</span> <span style="color: rgb(175,0,255)">@contextlib</span><span style="color: rgb(98,98,98)">.</span>contextmanager
+<span class="ansi-green-fg">    197</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">acquire_context</span>(<span style="color: rgb(0,135,0)">self</span>, needs_lock<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">True</span>):
+<span class="ansi-green-fg">    198</span> <span style="color: rgb(188,188,188)">    </span><span style="color: rgb(175,0,0)">&#34;&#34;&#34;Context manager for acquiring a file.&#34;&#34;&#34;</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 199</span>     file, cached <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_acquire_with_cache_info</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">needs_lock</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    200</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-fg">    201</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">yield</span> file
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\file_manager.py:217</span>, in <span class="ansi-cyan-fg">CachingFileManager._acquire_with_cache_info</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    215</span>     kwargs <span style="color: rgb(98,98,98)">=</span> kwargs<span style="color: rgb(98,98,98)">.</span>copy()
+<span class="ansi-green-fg">    216</span>     kwargs[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">mode</span><span style="color: rgb(175,0,0)">&#34;</span>] <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 217</span> file <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_opener</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    218</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode <span style="color: rgb(98,98,98)">==</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">w</span><span style="color: rgb(175,0,0)">&#34;</span>:
+<span class="ansi-green-fg">    219</span>     <span style="color: rgb(95,135,135)"># ensure file doesn&#39;t get overridden when opened again</span>
+<span class="ansi-green-fg">    220</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">a</span><span style="color: rgb(175,0,0)">&#34;</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">src\\netCDF4\\_netCDF4.pyx:2521</span>, in <span class="ansi-cyan-fg">netCDF4._netCDF4.Dataset.__init__</span><span class="ansi-blue-intense-fg ansi-bold">()</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">src\\netCDF4\\_netCDF4.pyx:2158</span>, in <span class="ansi-cyan-fg">netCDF4._netCDF4._ensure_nc_success</span><span class="ansi-blue-intense-fg ansi-bold">()</span>
+
+<span class="ansi-red-intense-fg ansi-bold">PermissionError</span>: [Errno 13] Permission denied: &#39;c:\\Users\\paulinkenbrandt\\Documents\\GitHub\\footprints\\docs\\notebooks\\2021_utah_merged.nc&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the NetCDF file</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="s2">&quot;2021_utah_merged.nc&quot;</span><span class="p">)</span>
+
+<span class="c1"># Inspect the dataset structure</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+
+<span class="n">var</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">&#39;PotEvap&#39;</span><span class="p">]</span>
+
+<span class="c1"># Plot a 2D slice (e.g., first time step if it has a time dimension)</span>
+<span class="n">var</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;xarray.Dataset&gt; Size: 2MB
+Dimensions:      (time: 25, bnds: 2, lat: 40, lon: 40)
+Coordinates:
+  * lon          (lon) float32 160B -113.9 -113.8 -113.7 ... -109.2 -109.1
+  * lat          (lat) float32 160B 37.06 37.19 37.31 ... 41.69 41.81 41.94
+  * time         (time) datetime64[ns] 200B 2021-01-01 ... 2021-01-02
+Dimensions without coordinates: bnds
+Data variables:
+    time_bnds    (time, bnds) datetime64[ns] 400B ...
+    Tair         (time, lat, lon) float32 160kB ...
+    Qair         (time, lat, lon) float32 160kB ...
+    PSurf        (time, lat, lon) float32 160kB ...
+    Wind_E       (time, lat, lon) float32 160kB ...
+    Wind_N       (time, lat, lon) float32 160kB ...
+    LWdown       (time, lat, lon) float32 160kB ...
+    CRainf_frac  (time, lat, lon) float32 160kB ...
+    CAPE         (time, lat, lon) float32 160kB ...
+    PotEvap      (time, lat, lon) float32 160kB ...
+    Rainf        (time, lat, lon) float32 160kB ...
+    SWdown       (time, lat, lon) float32 160kB ...
+Attributes: (12/17)
+    missing_value:          -9999.0
+    time_definition:        hourly
+    shortname:              NLDAS_FORA0125_H_2.0
+    title:                  NLDAS Primary Forcing Data L4 Hourly 0.125 x 0.12...
+    version:                2.0
+    institution:            NASA GSFC
+    ...                     ...
+    websites:               https://ldas.gsfc.nasa.gov/nldas/ ; https://lis.g...
+    MAP_PROJECTION:         EQUIDISTANT CYLINDRICAL
+    SOUTH_WEST_CORNER_LAT:  25.0625
+    SOUTH_WEST_CORNER_LON:  -124.9375
+    DX:                     0.125
+    DY:                     0.125
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.collections.QuadMesh at 0x20451b034d0&gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_NLDAS_Download_and_Summarize_10_2.png" src="../_images/notebooks_NLDAS_Download_and_Summarize_10_2.png" />
+</div>
+</div>
+<p>This .nc file includes a variable called ETo (reference evapotranspiration), defined over four dimensions: elevation, time, lat, and lon.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fluxfootprints</span><span class="o">.</span><span class="n">calc_hourly_ffp_xr</span><span class="p">(</span><span class="n">input_data_dir</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
+                            <span class="n">years</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2021</span><span class="p">],</span>
+                            <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;./output/&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+2021
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">KeyError</span>                                  Traceback (most recent call last)
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\file_manager.py:211</span>, in <span class="ansi-cyan-fg">CachingFileManager._acquire_with_cache_info</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    210</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 211</span>     file <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_cache</span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_key</span><span class="ansi-yellow-bg">]</span>
+<span class="ansi-green-fg">    212</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">KeyError</span>:
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\lru_cache.py:56</span>, in <span class="ansi-cyan-fg">LRUCache.__getitem__</span><span class="ansi-blue-intense-fg ansi-bold">(self, key)</span>
+<span class="ansi-green-fg">     55</span> <span class="ansi-bold" style="color: rgb(0,135,0)">with</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_lock:
+<span class="ansi-green-intense-fg ansi-bold">---&gt; 56</span>     value <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_cache</span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg">key</span><span class="ansi-yellow-bg">]</span>
+<span class="ansi-green-fg">     57</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_cache<span style="color: rgb(98,98,98)">.</span>move_to_end(key)
+
+<span class="ansi-red-intense-fg ansi-bold">KeyError</span>: [&lt;class &#39;netCDF4._netCDF4.Dataset&#39;&gt;, (&#39;c:\\Users\\paulinkenbrandt\\Documents\\GitHub\\footprints\\docs\\notebooks\\output\\2021_with_eto.nc&#39;,), &#39;a&#39;, ((&#39;clobber&#39;, True), (&#39;diskless&#39;, False), (&#39;format&#39;, &#39;NETCDF4&#39;), (&#39;persist&#39;, False)), &#39;d70bee1a-0c6c-4870-81ee-eba444716d9d&#39;]
+
+During handling of the above exception, another exception occurred:
+
+<span class="ansi-red-intense-fg ansi-bold">PermissionError</span>                           Traceback (most recent call last)
+Cell <span class="ansi-green-intense-fg ansi-bold">In[29], line 1</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span> <span class="ansi-yellow-bg">fluxfootprints</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">calc_hourly_ffp_xr</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">input_data_dir</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">.</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">      2</span> <span class="ansi-yellow-bg">                            </span><span class="ansi-yellow-bg">years</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">2021</span><span class="ansi-yellow-bg">]</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">      3</span> <span class="ansi-yellow-bg">                            </span><span class="ansi-yellow-bg">output_dir</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">./output/</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\Documents\GitHub\footprints\docs\notebooks\../../src\fluxfootprints\volk.py:1054</span>, in <span class="ansi-cyan-fg">calc_hourly_ffp_xr</span><span class="ansi-blue-intense-fg ansi-bold">(input_data_dir, years, output_dir)</span>
+<span class="ansi-green-fg">   1051</span> ds <span style="color: rgb(98,98,98)">=</span> ds<span style="color: rgb(98,98,98)">.</span>assign(ETr<span style="color: rgb(98,98,98)">=</span>etr_da)
+<span class="ansi-green-fg">   1053</span> <span style="color: rgb(95,135,135)"># Save the modified dataset (Optional)</span>
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1054</span> <span class="ansi-yellow-bg">ds</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">to_netcdf</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">output_dir</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">/</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">f</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(175,95,135)">{</span><span class="ansi-yellow-bg">year</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(175,95,135)">}</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">_with_eto.nc</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\core\dataset.py:2380</span>, in <span class="ansi-cyan-fg">Dataset.to_netcdf</span><span class="ansi-blue-intense-fg ansi-bold">(self, path, mode, format, group, engine, encoding, unlimited_dims, compute, invalid_netcdf, auto_complex)</span>
+<span class="ansi-green-fg">   2377</span>     encoding <span style="color: rgb(98,98,98)">=</span> {}
+<span class="ansi-green-fg">   2378</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,0,255)">xarray</span><span class="ansi-bold" style="color: rgb(0,0,255)">.</span><span class="ansi-bold" style="color: rgb(0,0,255)">backends</span><span class="ansi-bold" style="color: rgb(0,0,255)">.</span><span class="ansi-bold" style="color: rgb(0,0,255)">api</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">import</span> to_netcdf
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 2380</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">to_netcdf</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">  </span><span class="ansi-yellow-bg" style="color: rgb(95,135,135)"># type: ignore[return-value]  # mypy cannot resolve the overloads:(</span>
+<span class="ansi-green-fg">   2381</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2382</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">path</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2383</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2384</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">format</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">format</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2385</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2386</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">engine</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">engine</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2387</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">encoding</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">encoding</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2388</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">unlimited_dims</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">unlimited_dims</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2389</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">compute</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">compute</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2390</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">multifile</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(0,135,0)">False</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2391</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">invalid_netcdf</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">invalid_netcdf</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2392</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">auto_complex</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">auto_complex</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">   2393</span> <span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\api.py:1911</span>, in <span class="ansi-cyan-fg">to_netcdf</span><span class="ansi-blue-intense-fg ansi-bold">(dataset, path_or_file, mode, format, group, engine, encoding, unlimited_dims, compute, multifile, invalid_netcdf, auto_complex)</span>
+<span class="ansi-green-fg">   1908</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> auto_complex <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-fg">   1909</span>     kwargs[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">auto_complex</span><span style="color: rgb(175,0,0)">&#34;</span>] <span style="color: rgb(98,98,98)">=</span> auto_complex
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1911</span> store <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">store_open</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">target</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">format</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">   1913</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> unlimited_dims <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-fg">   1914</span>     unlimited_dims <span style="color: rgb(98,98,98)">=</span> dataset<span style="color: rgb(98,98,98)">.</span>encoding<span style="color: rgb(98,98,98)">.</span>get(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">unlimited_dims</span><span style="color: rgb(175,0,0)">&#34;</span>, <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>)
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:452</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore.open</span><span class="ansi-blue-intense-fg ansi-bold">(cls, filename, mode, format, group, clobber, diskless, persist, auto_complex, lock, lock_maker, autoclose)</span>
+<span class="ansi-green-fg">    448</span>     kwargs[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">auto_complex</span><span style="color: rgb(175,0,0)">&#34;</span>] <span style="color: rgb(98,98,98)">=</span> auto_complex
+<span class="ansi-green-fg">    449</span> manager <span style="color: rgb(98,98,98)">=</span> CachingFileManager(
+<span class="ansi-green-fg">    450</span>     netCDF4<span style="color: rgb(98,98,98)">.</span>Dataset, filename, mode<span style="color: rgb(98,98,98)">=</span>mode, kwargs<span style="color: rgb(98,98,98)">=</span>kwargs
+<span class="ansi-green-fg">    451</span> )
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 452</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">cls</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">manager</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">group</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">mode</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">lock</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">lock</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">autoclose</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">autoclose</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:393</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore.__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, manager, group, mode, lock, autoclose)</span>
+<span class="ansi-green-fg">    391</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_group <span style="color: rgb(98,98,98)">=</span> group
+<span class="ansi-green-fg">    392</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode <span style="color: rgb(98,98,98)">=</span> mode
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 393</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>format <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">ds</span><span style="color: rgb(98,98,98)">.</span>data_model
+<span class="ansi-green-fg">    394</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_filename <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>ds<span style="color: rgb(98,98,98)">.</span>filepath()
+<span class="ansi-green-fg">    395</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>is_remote <span style="color: rgb(98,98,98)">=</span> is_remote_uri(<span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_filename)
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:461</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore.ds</span><span class="ansi-blue-intense-fg ansi-bold">(self)</span>
+<span class="ansi-green-fg">    459</span> <span style="color: rgb(175,0,255)">@property</span>
+<span class="ansi-green-fg">    460</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">ds</span>(<span style="color: rgb(0,135,0)">self</span>):
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 461</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_acquire</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\netCDF4_.py:455</span>, in <span class="ansi-cyan-fg">NetCDF4DataStore._acquire</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    454</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">_acquire</span>(<span style="color: rgb(0,135,0)">self</span>, needs_lock<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">True</span>):
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 455</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">with</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_manager<span style="color: rgb(98,98,98)">.</span>acquire_context(needs_lock) <span class="ansi-bold" style="color: rgb(0,135,0)">as</span> root:
+<span class="ansi-green-fg">    456</span>         ds <span style="color: rgb(98,98,98)">=</span> _nc4_require_group(root, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_group, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode)
+<span class="ansi-green-fg">    457</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> ds
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\contextlib.py:141</span>, in <span class="ansi-cyan-fg">_GeneratorContextManager.__enter__</span><span class="ansi-blue-intense-fg ansi-bold">(self)</span>
+<span class="ansi-green-fg">    139</span> <span class="ansi-bold" style="color: rgb(0,135,0)">del</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>args, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>kwds, <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>func
+<span class="ansi-green-fg">    140</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 141</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">next</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">gen</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    142</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">StopIteration</span>:
+<span class="ansi-green-fg">    143</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">RuntimeError</span>(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">generator didn</span><span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">t yield</span><span style="color: rgb(175,0,0)">&#34;</span>) <span class="ansi-bold" style="color: rgb(0,135,0)">from</span><span style="color: rgb(188,188,188)"> </span><span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\file_manager.py:199</span>, in <span class="ansi-cyan-fg">CachingFileManager.acquire_context</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    196</span> <span style="color: rgb(175,0,255)">@contextlib</span><span style="color: rgb(98,98,98)">.</span>contextmanager
+<span class="ansi-green-fg">    197</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">acquire_context</span>(<span style="color: rgb(0,135,0)">self</span>, needs_lock<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">True</span>):
+<span class="ansi-green-fg">    198</span> <span style="color: rgb(188,188,188)">    </span><span style="color: rgb(175,0,0)">&#34;&#34;&#34;Context manager for acquiring a file.&#34;&#34;&#34;</span>
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 199</span>     file, cached <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_acquire_with_cache_info</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">needs_lock</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    200</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-fg">    201</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">yield</span> file
+
+File <span class="ansi-green-intense-fg ansi-bold">c:\Users\paulinkenbrandt\.conda\envs\py313\Lib\site-packages\xarray\backends\file_manager.py:217</span>, in <span class="ansi-cyan-fg">CachingFileManager._acquire_with_cache_info</span><span class="ansi-blue-intense-fg ansi-bold">(self, needs_lock)</span>
+<span class="ansi-green-fg">    215</span>     kwargs <span style="color: rgb(98,98,98)">=</span> kwargs<span style="color: rgb(98,98,98)">.</span>copy()
+<span class="ansi-green-fg">    216</span>     kwargs[<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">mode</span><span style="color: rgb(175,0,0)">&#34;</span>] <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 217</span> file <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_opener</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    218</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode <span style="color: rgb(98,98,98)">==</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">w</span><span style="color: rgb(175,0,0)">&#34;</span>:
+<span class="ansi-green-fg">    219</span>     <span style="color: rgb(95,135,135)"># ensure file doesn&#39;t get overridden when opened again</span>
+<span class="ansi-green-fg">    220</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_mode <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">a</span><span style="color: rgb(175,0,0)">&#34;</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">src\\netCDF4\\_netCDF4.pyx:2521</span>, in <span class="ansi-cyan-fg">netCDF4._netCDF4.Dataset.__init__</span><span class="ansi-blue-intense-fg ansi-bold">()</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">src\\netCDF4\\_netCDF4.pyx:2158</span>, in <span class="ansi-cyan-fg">netCDF4._netCDF4._ensure_nc_success</span><span class="ansi-blue-intense-fg ansi-bold">()</span>
+
+<span class="ansi-red-intense-fg ansi-bold">PermissionError</span>: [Errno 13] Permission denied: &#39;c:\\Users\\paulinkenbrandt\\Documents\\GitHub\\footprints\\docs\\notebooks\\output\\2021_with_eto.nc&#39;
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the NetCDF file</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="s2">&quot;./output/2021_with_eto.nc&quot;</span><span class="p">)</span>
+
+<span class="c1"># Target location and elevation</span>
+<span class="n">target_lat</span> <span class="o">=</span> <span class="mf">39.5</span>
+<span class="n">target_lon</span> <span class="o">=</span> <span class="o">-</span><span class="mf">111.8</span>
+<span class="n">target_elev</span> <span class="o">=</span> <span class="mi">1500</span>
+
+<span class="c1"># Find nearest indices</span>
+<span class="n">lat_idx</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">lat</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="n">target_lat</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+<span class="n">lon_idx</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">lon</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">lon</span><span class="o">=</span><span class="n">target_lon</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+<span class="n">elev_idx</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">elevation</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">elevation</span><span class="o">=</span><span class="n">target_elev</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+
+<span class="c1"># Extract the time series</span>
+<span class="n">eto_timeseries</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ETo</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">lat</span><span class="o">=</span><span class="n">lat_idx</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="n">lon_idx</span><span class="p">,</span> <span class="n">elevation</span><span class="o">=</span><span class="n">elev_idx</span><span class="p">)</span>
+
+<span class="c1"># Plot the time series</span>
+<span class="n">eto_timeseries</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ETo Time Series at </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">lat_idx</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">lon_idx</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">elev_idx</span><span class="p">)</span><span class="si">}</span><span class="s2"> m&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;ETo (units)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_NLDAS_Download_and_Summarize_13_0.png" src="../_images/notebooks_NLDAS_Download_and_Summarize_13_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Choose time and elevation</span>
+<span class="n">time_point</span> <span class="o">=</span> <span class="s2">&quot;2021-01-01T18:00&quot;</span>
+<span class="n">elev_idx</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">elevation</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">elevation</span><span class="o">=</span><span class="mi">1500</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+
+<span class="c1"># Extract the raster</span>
+<span class="n">eto_raster</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">ETo</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="n">time_point</span><span class="p">,</span> <span class="n">elevation</span><span class="o">=</span><span class="n">elev_idx</span><span class="p">)</span>
+
+<span class="c1"># Plot raster</span>
+<span class="n">eto_raster</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ETo Raster at </span><span class="si">{</span><span class="n">time_point</span><span class="si">}</span><span class="s2">, Elevation </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">elev_idx</span><span class="p">)</span><span class="si">}</span><span class="s2"> m&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_NLDAS_Download_and_Summarize_14_0.png" src="../_images/notebooks_NLDAS_Download_and_Summarize_14_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fluxfootprints</span><span class="o">.</span><span class="n">extract_nldas_xr_to_df</span><span class="p">([</span><span class="mi">2021</span><span class="p">],</span>
+                                      <span class="n">config_path</span><span class="o">=</span><span class="s2">&quot;../../data/station_config/&quot;</span><span class="p">,</span>
+                                      <span class="n">input_path</span><span class="o">=</span><span class="s2">&quot;./output&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+US-UTE
+US-UTW
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./output/&quot;</span><span class="p">)</span>
+<span class="n">eto_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">output_path</span> <span class="o">/</span> <span class="s1">&#39;nldas_all.parquet&#39;</span><span class="p">)</span>
+<span class="n">normed_df</span> <span class="o">=</span> <span class="n">fluxfootprints</span><span class="o">.</span><span class="n">normalize_eto_df</span><span class="p">(</span><span class="n">eto_df</span><span class="p">)</span>
+<span class="n">normed_df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">output_path</span> <span class="o">/</span> <span class="s1">&#39;nldas_all_normed.parquet&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./output/&quot;</span><span class="p">)</span>
+
+<span class="n">gpds</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">raster</span> <span class="ow">in</span> <span class="n">output_path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;*weighted.tif&#39;</span><span class="p">):</span>
+
+    <span class="n">date</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">raster</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">gpds</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">date</span><span class="si">:</span><span class="s2">%Y-%m-%d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">micromet</span><span class="o">.</span><span class="n">outline_valid_cells</span><span class="p">(</span><span class="n">raster</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">footprints</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">gpds</span><span class="p">)</span>
+<span class="n">footprints</span><span class="p">[</span><span class="s1">&#39;stationid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;US-UTW&#39;</span>
+<span class="n">footprints</span> <span class="o">=</span> <span class="n">footprints</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;level_0&#39;</span><span class="p">:</span><span class="s1">&#39;date&#39;</span><span class="p">})</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;level_1&#39;</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">footprints</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">configparser</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">ConfigParser</span><span class="p">()</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;../../secrets/config.ini&#39;</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_engine</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">urllib.parse</span>
+<span class="n">host</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;DEFAULT&#39;</span><span class="p">][</span><span class="s1">&#39;ip&#39;</span><span class="p">]</span>
+<span class="n">pw</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;DEFAULT&#39;</span><span class="p">][</span><span class="s1">&#39;pw&#39;</span><span class="p">]</span>
+<span class="n">user</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s1">&#39;DEFAULT&#39;</span><span class="p">][</span><span class="s1">&#39;login&#39;</span><span class="p">]</span>
+
+<span class="n">encoded_password</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">parse</span><span class="o">.</span><span class="n">quote_plus</span><span class="p">(</span><span class="n">pw</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">postconn_et</span><span class="p">(</span><span class="n">encoded_password</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span><span class="n">port</span><span class="o">=</span><span class="s1">&#39;5432&#39;</span><span class="p">,</span><span class="n">db</span><span class="o">=</span><span class="s1">&#39;groundwater&#39;</span><span class="p">,</span> <span class="n">schema</span> <span class="o">=</span> <span class="s1">&#39;groundwater&#39;</span><span class="p">):</span>
+    <span class="n">connection_text</span> <span class="o">=</span> <span class="s2">&quot;postgresql+psycopg2://</span><span class="si">{:}</span><span class="s2">:</span><span class="si">{:}</span><span class="s2">@</span><span class="si">{:}</span><span class="s2">:</span><span class="si">{:}</span><span class="s2">/</span><span class="si">{:}</span><span class="s2">?gssencmode=disable&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">user</span><span class="p">,</span><span class="n">encoded_password</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="n">port</span><span class="p">,</span><span class="n">db</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">create_engine</span><span class="p">(</span><span class="n">connection_text</span><span class="p">,</span> <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="s1">&#39;-csearch_path=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">schema</span><span class="p">)})</span>
+
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">postconn_et</span><span class="p">(</span><span class="n">encoded_password</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span>
+<br/><br/></pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">footprints</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="s2">&quot;daily_footprint_areas.geojson&quot;</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="s2">&quot;GeoJSON&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># 3. Export to PostGIS table</span>
+<span class="n">table_name</span> <span class="o">=</span> <span class="s2">&quot;daily_footprint_areas&quot;</span>
+<span class="n">footprints</span><span class="o">.</span><span class="n">to_postgis</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span>
+    <span class="n">con</span><span class="o">=</span><span class="n">engine</span><span class="p">,</span>
+    <span class="n">if_exists</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">,</span>   <span class="c1"># or &quot;append&quot;</span>
+    <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>           <span class="c1"># do not write pandas index as a column</span>
+    <span class="c1">#geom_col=&#39;geometry&#39;,     # use a custom geometry column name if desired</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GeoDataFrame successfully exported to &#39;</span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&#39; in database.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Paul Inkenbrandt, Natascha Kljun, John Volk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
