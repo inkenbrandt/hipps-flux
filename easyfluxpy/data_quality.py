@@ -1,4 +1,3 @@
-```python
 """
 Data quality assessment for eddy covariance measurements.
 
@@ -351,4 +350,3 @@ def quality_filter(
     filtered = data.copy()
     filtered[quality_flags > min_quality] = np.nan
     return filtered
-```

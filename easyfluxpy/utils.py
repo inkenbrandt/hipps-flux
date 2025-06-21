@@ -1,4 +1,4 @@
-```python
+
 """
 Utility functions for eddy covariance data processing.
 
@@ -416,4 +416,3 @@ def interpolate_gaps(
         raise ValueError(f"Unknown interpolation method: {method}")
         
     return interpolated, interpolate_mask
-```

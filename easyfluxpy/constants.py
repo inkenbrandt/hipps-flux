@@ -1,4 +1,4 @@
-```python
+
 """
 Physical constants and configuration parameters for eddy covariance calculations.
 
@@ -240,4 +240,4 @@ def get_roughness_length(
         return 0.15 * canopy_height
     else:
         return ROUGHNESS_LENGTH[surface_type]
-```
+

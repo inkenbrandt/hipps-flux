@@ -2,7 +2,7 @@ import pytest
 from dataclasses import dataclass
 from easyfluxpy.data_quality import StationarityTest
 
-@dataclass
+
 class TestStationarityTest:
     
     def test_RN_uw(self):
