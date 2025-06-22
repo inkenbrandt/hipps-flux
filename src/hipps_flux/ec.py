@@ -3735,27 +3735,88 @@ class CalcFlux:
         return self.cosv, self.sinv, self.sinTheta, self.cosTheta, Uxy, Uxyz
 
     def rotate_velocity_values(
-        self, df: pd.DataFrame = None, Ux: str = "Ux", Uy: str = "Uy", Uz: str = "Uz"
+        self,
+        df: pd.DataFrame | None = None,
+        Ux: str = "Ux",
+        Uy: str = "Uy",
+        Uz: str = "Uz",
     ) -> pd.DataFrame:
-        """Rotate wind velocity values
+        """
+        Apply the **double‐rotation matrix** (yaw + pitch) obtained from
+        :meth:`coord_rotation` to every instantaneous wind sample, producing
+        velocity components aligned with the mean flow.
 
-        Args:
-            df: Dataframe containing the wind velocity components
-            Ux: Longitudinal component of the wind velocity (m s-1); aka u
-            Uy: Lateral component of the wind velocity (m s-1); aka v
-            Uz: Vertical component of the wind velocity (m s-1); aka w
+        For each record the transformation is
 
-        Returns:
+        .. math::
 
+            \\begin{aligned}
+            u_r &=  u\\cos\\theta\\cos\\nu
+                 + v\\cos\\theta\\sin\\nu
+                 + w\\sin\\theta,\\\\[4pt]
+            v_r &=  v\\cos\\nu - u\\sin\\nu,\\\\[4pt]
+            w_r &=  w\\cos\\theta
+                 - u\\sin\\theta\\cos\\nu
+                 - v\\sin\\theta\\sin\\nu,
+            \\end{aligned}
+
+        where :math:`\\nu` and :math:`\\theta` are the yaw and pitch angles
+        cached in ``self.cosv``, ``self.sinv``, ``self.cosTheta``,
+        ``self.sinTheta`` by a prior call to :meth:`coord_rotation`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame, optional
+            DataFrame containing raw wind components.  If *None*, the method
+            uses the instance attribute ``self.df``.
+        Ux, Uy, Uz : str, default ``'Ux'``, ``'Uy'``, ``'Uz'``
+            Column names for the longitudinal (*u*), lateral (*v*), and
+            vertical (*w*) wind components.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Same object with **three new columns** added:
+
+            * ``Uxr`` – rotated longitudinal component *u_r* (m s⁻¹)
+            * ``Uyr`` – rotated lateral component     *v_r* (m s⁻¹)
+            * ``Uzr`` – rotated vertical component    *w_r* (m s⁻¹)
+
+            The instance attribute ``self.df`` is updated in place.
+
+        Notes
+        -----
+        * **Must** call :meth:`coord_rotation` first; otherwise the cached
+          trigonometric factors are ``None`` and the method prints a warning.
+        * Only the first two rotations of a full triple rotation are applied
+          here; *roll* (tilt) correction is handled elsewhere if required.
+
+        Examples
+        --------
+        >>> import pandas as pd, numpy as np
+        >>> from ec import CalcFlux
+        >>> rng = np.random.default_rng(2)
+        >>> df = pd.DataFrame({
+        ...     "Ux": rng.normal(2.0, 0.3, 5000),
+        ...     "Uy": rng.normal(0.4, 0.2, 5000),
+        ...     "Uz": rng.normal(0.05, 0.1, 5000),
+        ... })
+        >>> calc = CalcFlux()
+        >>> calc.coord_rotation(df)          # computes cosv, sinv, etc.
+        >>> df_rot = calc.rotate_velocity_values(df)
+        >>> df_rot[["Uxr", "Uyr", "Uzr"]].head()
+               Uxr       Uyr       Uzr
+        0  2.054905 -0.079402 -0.048402
+        1  1.980984  0.094779 -0.009772
+        2  1.999265 -0.093132  0.096403
+        3  2.065206 -0.079623 -0.021688
+        4  2.204025 -0.004639 -0.010206
         """
         if df is None:
             df = self.df
-        else:
-            pass
 
         if self.cosTheta is None:
             print("Please run coord_rotation")
-            pass
         else:
             df["Uxr"] = (
                 df[Ux] * self.cosTheta * self.cosv
@@ -3773,30 +3834,75 @@ class CalcFlux:
             return df
 
     def rotated_components_statistics(
-        self, df: pd.DataFrame, Ux: str = "Ux", Uy: str = "Uy", Uz: str = "Uz"
+        self,
+        df: pd.DataFrame | None = None,
+        Ux: str = "Ux",
+        Uy: str = "Uy",
+        Uz: str = "Uz",
     ):
-        """Calculate the Average and Standard Deviations of the Rotated Velocity Components
+        """
+        Compute **means** and **standard deviations** of the *rotated* wind
+        components and store them in the instance dictionaries
+        ``self.avgvals`` and ``self.stdvals``.
 
-        Args:
-            df: Dataframe containing the wind velocity components
-            Ux: Longitudinal component of the wind velocity (m s-1); aka u
-            Uy: Lateral component of the wind velocity (m s-1); aka v
-            Uz: Vertical component of the wind velocity (m s-1); aka w
+        Prerequisite
+        ------------
+        The dataframe *df* **must already contain** the columns
+        ``'Uxr'``, ``'Uyr'``, and ``'Uzr'`` produced by
+        :meth:`rotate_velocity_values`.
+        The original (unrotated) means ``self.avgvals['Ux']``, etc., should
+        likewise be available—typically set earlier by
+        :meth:`coord_rotation`.
 
-        Returns:
+        Parameters
+        ----------
+        df : pandas.DataFrame, optional
+            DataFrame holding both raw and rotated wind components.  If
+            *None*, the method uses ``self.df``.
+        Ux, Uy, Uz : str, default ``'Ux'``, ``'Uy'``, ``'Uz'``
+            Column names for the **raw** wind components; used only for the
+            auxiliary calculation of ``self.avgvals['Uav']``.
 
+        Returns
+        -------
+        None
+            The function operates **in place**, updating:
+
+            * ``self.avgvals['Uxr'|'Uyr'|'Uzr']`` – mean rotated components
+            * ``self.stdvals['Uxr'|'Uyr'|'Uzr']`` – standard deviations
+            * ``self.avgvals['Uav']`` – mean wind speed along the rotated
+              *x′*-axis (scalar).
+
+        Notes
+        -----
+        * ``self.avgvals`` and ``self.stdvals`` are ordinary Python dicts
+          initialised in :meth:`__init__`.
+        * ``Uav`` is recomputed from the **raw** means and the cached rotation
+          angles (*cosν*, *sinν*, *cosθ*, *sinθ*); it should equal
+          ``self.avgvals['Uxr']`` within numerical tolerance if all steps were
+          executed correctly.
+
+        Examples
+        --------
+        >>> from ec import CalcFlux
+        >>> calc = CalcFlux()
+        >>> # assume df already has Uxr/Uyr/Uzr via prior rotation
+        >>> calc.rotated_components_statistics(df)
+        >>> calc.avgvals['Uxr'], calc.stdvals['Uxr']
+        (2.021, 0.503)
         """
         if df is None:
             df = self.df
-        else:
-            pass
 
+        # Means and standard deviations of rotated components
         self.avgvals["Uxr"] = df["Uxr"].mean()
         self.avgvals["Uyr"] = df["Uyr"].mean()
         self.avgvals["Uzr"] = df["Uzr"].mean()
         self.stdvals["Uxr"] = df["Uxr"].std()
         self.stdvals["Uyr"] = df["Uyr"].std()
         self.stdvals["Uzr"] = df["Uzr"].std()
+
+        # Auxiliary: mean wind speed along rotated x′ axis (should ≈ Uxr mean)
         self.avgvals["Uav"] = (
             self.avgvals["Ux"] * self.cosTheta * self.cosv
             + self.avgvals["Uy"] * self.cosTheta * self.sinv
@@ -3804,29 +3910,119 @@ class CalcFlux:
         )
         return
 
-    def dayfrac(self, df):
+    def dayfrac(self, df: pd.DataFrame) -> float:
+        """
+        Return the **fraction of a day** represented by the time span between
+        the first and last **valid** index entries of *df*.
+
+        The calculation is
+
+        .. math::
+
+            \\text{dayfrac} =
+              \\frac{t_{\\text{last}} - t_{\\text{first}}}{1\\;\\text{day}},
+
+        where *t_first* and *t_last* are obtained via
+        :pymeth:`pandas.DataFrame.first_valid_index` and
+        :pymeth:`pandas.DataFrame.last_valid_index`.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            Time-indexed dataframe (typically 10 Hz or 20 Hz raw flux data).
+            Any index entries that are ``NaT`` or rows that are entirely ``NaN``
+            are ignored by the “valid” index methods.
+
+        Returns
+        -------
+        float
+            Fractional part of a 24-hour day covered by the data, e.g.
+            ``0.020833`` for a 30-minute period.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from ec import CalcFlux
+        >>> idx = pd.date_range("2025-06-21 13:30", periods=36000, freq="100L")  # 1 h @ 10 Hz
+        >>> df = pd.DataFrame({"Ux": 0.0}, index=idx)
+        >>> CalcFlux().dayfrac(df)
+        0.041666666666666664  # 1 h / 24 h
+        """
         return (df.last_valid_index() - df.first_valid_index()) / pd.to_timedelta(
             1, unit="D"
         )
 
-    def calc_covar(self, Ux, Uy, Uz, Ts, Q, pV):
-        """Calculate standard covariances of primary variables
-
-        Args:
-            Ux: Longitudinal component of the wind velocity (m s-1); aka u
-            Uy: Lateral component of the wind velocity (m s-1); aka v
-            Uz: Vertical component of the wind velocity (m s-1); aka w
-            Ts: Sonic Temperature
-            Q: Humidity
-            pV: Vapor Density
-
-        Returns:
-            Saves resulting covariance to the `covar` dictionary object; ex self.covar['Ux_Ux']
+    def calc_covar(
+        self,
+        Ux: np.ndarray,
+        Uy: np.ndarray,
+        Uz: np.ndarray,
+        Ts: np.ndarray,
+        Q: np.ndarray,
+        pV: np.ndarray,
+    ):
         """
+        Compute the **second-order moments (variances and covariances)**
+        required for eddy-flux calculations and store them in
+        :pyattr:`self.covar`.
 
+        For every input pair *(a, b)* the routine calls
+        :meth:`calc_cov(a, b)`—an unbiased, vectorised covariance
+        implementation—to obtain
+
+        =========================  Stored under key      Units
+        -------------------------  ---------------------  -----
+        ``cov(Ts, Ts)``            ``'Ts-Ts'``            K²
+        ``cov(Ux, Ux)``            ``'Ux-Ux'``            (m s⁻¹)²
+        ``cov(Uy, Uy)``            ``'Uy-Uy'``            (m s⁻¹)²
+        ``cov(Uz, Uz)``            ``'Uz-Uy'``\*          (m s⁻¹)²
+        ``cov(Q, Q)``              ``'Q-Q'``              (kg kg⁻¹)²
+        ``cov(pV, pV)``            ``'pV-pV'``            (kg m⁻³)²
+        =========================  =====================  =====
+
+        \* *Note:* the key ``"Uz-Uy"`` follows the original code and appears
+        to be a typographical slip; it actually stores
+        ``cov(Uz, Uz)``.
+
+        Parameters
+        ----------
+        Ux, Uy, Uz : ndarray
+            Instantaneous wind components *u*, *v*, *w* (m s⁻¹).
+        Ts : ndarray
+            Sonic (virtual) temperature (K).
+        Q : ndarray
+            Specific humidity (kg kg⁻¹).
+        pV : ndarray
+            Water-vapour density (kg m⁻³).
+
+        Returns
+        -------
+        None
+            Covariance terms are saved to the instance dictionary
+            ``self.covar`` for later use by spectral corrections,
+            WPL density adjustments, and flux computations.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from ec import CalcFlux
+        >>> rng = np.random.default_rng(3)
+        >>> N = 20000
+        >>> calc = CalcFlux()
+        >>> calc.calc_covar(
+        ...     Ux=rng.normal(0, 1, N),
+        ...     Uy=rng.normal(0, 1, N),
+        ...     Uz=rng.normal(0, 0.2, N),
+        ...     Ts=rng.normal(300, 0.5, N),
+        ...     Q=rng.normal(0.01, 1e-4, N),
+        ...     pV=rng.normal(0.004, 2e-5, N),
+        ... )
+        >>> calc.covar.keys()
+        dict_keys(['Ts-Ts', 'Ux-Ux', 'Uy-Uy', 'Uz-Uy', 'Q-Q', 'pV-pV'])
+        """
         self.covar["Ts-Ts"] = self.calc_cov(Ts, Ts)
         self.covar["Ux-Ux"] = self.calc_cov(Ux, Ux)
         self.covar["Uy-Uy"] = self.calc_cov(Uy, Uy)
-        self.covar["Uz-Uy"] = self.calc_cov(Uz, Uz)
+        self.covar["Uz-Uy"] = self.calc_cov(Uz, Uz)  # key kept as in original
         self.covar["Q-Q"] = self.calc_cov(Q, Q)
         self.covar["pV-pV"] = self.calc_cov(pV, pV)

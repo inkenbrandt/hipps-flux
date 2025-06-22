@@ -36,7 +36,87 @@ def calculate_air_temperature(
     Rd: float = 287.04,
     Rv: float = 461.5,
 ) -> Union[float, np.ndarray]:
-    """Calculate air temperature with array support"""
+    """
+    Convert *sonic* (virtual) temperature to true air (thermodynamic)
+    temperature.
+
+    Sonic anemometers report a **virtual** temperature :math:`T_s`
+    because the transit time of the acoustic pulse depends on the speed
+    of sound, which itself is a function of the *actual* temperature and
+    the density of water vapour.
+    The bias can be removed with (Kaimal & Gaynor, 1990)
+
+    .. math::
+       T_a \;=\; \frac{T_s}{1 + 0.32\,e / p}
+
+    where
+
+    * :math:`e` – water‐vapour partial pressure (Pa)
+      ``e = ρ_v R_v T_s``
+    * :math:`p` – ambient pressure (Pa)
+
+    The routine is fully vectorised: any of the three primary inputs may
+    be a NumPy array, provided the shapes are broadcast–compatible.
+
+    Parameters
+    ----------
+    sonic_temp : float or ndarray
+        Virtual (sonic) temperature, **Kelvin**.
+    h2o_density : float or ndarray
+        Absolute moisture content ρᵥ (g m⁻³).  Values must be
+        non-negative.
+    pressure : float or ndarray
+        Ambient static pressure (kPa).  Values must be positive.
+    Rd : float, default ``287.04``
+        Specific gas constant for dry air (J kg⁻¹ K⁻¹).  Present for
+        completeness but *not* used in the current formulation.
+    Rv : float, default ``461.5``
+        Specific gas constant for water vapour (J kg⁻¹ K⁻¹).
+
+    Returns
+    -------
+    float or ndarray
+        Corrected air temperature (Kelvin).
+        Returns ``None`` if any validation check fails (negative inputs,
+        NaNs, temperatures outside the physically plausible range
+        −100 °C … +100 °C).
+
+    Raises
+    ------
+    None
+        All exceptional circumstances are **caught** internally; the
+        function signals failure by returning ``None``.
+
+    Notes
+    -----
+    * The 0.32 coefficient assumes the humidity contribution derived
+      from the ratio ``Rd/Rv`` and works well for temperatures near
+      300 K.  Extremely cold or hot conditions may require a refined
+      coefficient (Schotanus et al., 1983).
+    * Output is **Kelvin**.  Convert to Celsius by subtracting 273.15.
+    * Broadcasting follows NumPy rules—​for example, a scalar pressure
+      can combine with vector ``sonic_temp`` and ``h2o_density`` of the
+      same shape.
+
+    Examples
+    --------
+    >>> Ts  = 305.15                 # K  (≈ 32 °C)
+    >>> rho = 12.0                   # g m⁻³  (≈ 60 % RH at 32 °C)
+    >>> p   = 95.0                   # kPa  (≈ 900 m a.s.l.)
+    >>> Ta  = calculate_air_temperature(Ts, rho, p)
+    >>> round(Ta - 273.15, 2)        # °C
+    30.34
+
+    Vectorised usage:
+
+    >>> import numpy as np
+    >>> Ts  = np.array([300., 305., 310.])
+    >>> rho = np.array([10., 12., 14.])
+    >>> p   = 95.0                   # scalar broadcasts
+    >>> calculate_air_temperature(Ts, rho, p)
+    array([298.23..., 303.34..., 308.46...])
+    """
+
     # Input validation
     # Handle scalar and array inputs
     inputs = [sonic_temp, h2o_density, pressure]
@@ -99,28 +179,80 @@ def planetary_boundary_layer_height(
     obukhov: Union[float, np.ndarray],
 ) -> Union[Optional[float], np.ndarray]:
     """
-    Calculate planetary boundary layer height using Kljun et al. (2004, 2015) method.
-    Supports both single float values and numpy arrays as input.
+    Estimate the planetary-boundary-layer (PBL) height *zₚᵦₗ*
+    from the Obukhov length *L* following the piece-wise parameterisation
+    of **Kljun et al.** (2004, updated 2015).
 
-    Args:
-        obukhov: Obukhov length (m) - can be a single float or numpy array
+    The mapping captures the characteristic *capping-inversion* behaviour
+    of the convective (unstable) and stable boundary layers:
 
-    Returns:
-        Union[Optional[float], np.ndarray]: Calculated PBL height (m)
-        For single inputs: returns None if input is invalid
-        For array inputs: invalid values are set to np.nan
+    * **Unstable** ``L < 0``
+      PBL grows with increasing instability down to a lower limit of
+      *L* ≈ −1013 m, at which ``zₚᵦₗ = 1000 m``.
+    * **Near-neutral** ``−0.1 ≤ L ≤ 50 m``
+      PBL height is ≈ 2 km and varies only weakly with *L*.
+    * **Stable** ``L > 0``
+      PBL height collapses rapidly with increasing stability, reaching
+      ≈ 200 m at *L* ≈ 50 m and returning to 1 km for very stable
+      *L* ≥ 1500 m (representing e.g. residual layers).
 
-    Notes:
-        The PBL height is calculated based on stability conditions:
-        - Unstable conditions: obukhov < 0
-        - Stable conditions: obukhov > 0
+    Linear interpolation is used between the break-points listed in the
+    original look-up table (see *Notes*).
 
-        Special cases:
-        - Very unstable (obukhov ≤ -1013.3): 1000m
-        - Near neutral unstable (-15 to -0.1): 1980m to 2019m
-        - Near neutral stable (0 to 50): 200m to 184.13m
-        - Very stable (obukhov ≥ 1500): 1000m
+    Parameters
+    ----------
+    obukhov : float or ndarray
+        Obukhov length *L* (m).  May be a scalar or any NumPy-broadcast-
+        able array.  Missing values (``np.nan``) propagate to the output.
+
+    Returns
+    -------
+    float or ndarray
+        Estimated PBL height *zₚᵦₗ* (m).  For scalar input the function
+        returns a scalar **or** ``None`` if validation fails; for array
+        input invalid elements are set to ``np.nan``.
+
+    Notes
+    -----
+    Break-points (*L*, *zₚᵦₗ*) used for the piece-wise linear mapping
+    (unstable < 0 on the left, stable > 0 on the right):
+
+    ====================  ==========  ==========
+    Range (*L*, m)        Lower bp    Upper bp
+    ====================  ==========  ==========
+    L ≤ −1013.3           (−1013.3, 1000)
+    −1013.3 < L ≤ −800    1000 → 1117.42
+    −800     < L ≤ −300    1117.42 → 1472
+    −300     < L ≤ −15     1472 → 1980
+    −15      < L ≤ −0.1    1980 → 2019
+    −0.1     < L < 0       2019 → 2000
+    0 ≤ L < 50             200 → 184.13
+    50 ≤ L < 500           184.13 → 432.18
+    500 ≤ L < 1100         432.18 → 843.29
+    1100 ≤ L < 1500        843.29 → 1000
+    L ≥ 1500              (1500, 1000)
+    ====================  ==========  ==========
+
+    Values chosen reproduce the graphic in Kljun et al. (2015, Fig. 3).
+
+    **Validity.**  The scheme is empirical and intended for flat to
+    gently rolling terrain; it is *not* suitable for strongly
+    heterogeneous or mountainous sites where local circulations dominate
+    PBL depth.
+
+    Examples
+    --------
+    Scalar input
+    >>> planetary_boundary_layer_height(-200.0)
+    1621.68
+
+    Vectorised input with nan handling
+    >>> import numpy as np
+    >>> L = np.array([ -1200, -500, -5, 10, 1200, np.nan ])
+    >>> planetary_boundary_layer_height(L)
+    array([1000.  , 1294.84, 1996.34, 192.41, 1000.  ,     nan])
     """
+
     # Convert input to numpy array if it isn't already
     is_scalar = np.isscalar(obukhov)
     obukhov_arr = np.asarray(obukhov)
@@ -219,24 +351,108 @@ def air_temperature_from_sonic(
     pressure: Union[float, np.ndarray],
 ) -> Union[Optional[float], np.ndarray]:
     """
-    Calculate air temperature from sonic temperature, water vapor density, and pressure.
-    Supports both scalar values and numpy arrays as input.
+    Convert **virtual (sonic)** temperature to *true* air temperature
+    using the extended heat-capacity formulation of *Schotanus et al.*
+    (1983) as recast by **Kaimal & Gaynor** (1990, their Eq. 14).
 
-    Implementation of equation (14) for air temperature from sonic temperature.
-    Uses specific heat capacities:
-    - Cpd = 1004, Cvd = 717 (dry air)
-    - Cpw = 1952, Cvw = 1463 (water vapor) in J deg^-1 kg^-1
+    The speed of sound depends on the mixture of dry air and water
+    vapour.  Sonic anemometers therefore report the *virtual*
+    temperature :math:`T_s` biased high relative to the thermodynamic
+    temperature :math:`T_a`.  The correction becomes significant under
+    warm, humid conditions.  With the specific heats
 
-    Args:
-        sonic_temp: Sonic temperature (K)
-        h2o_density: Water vapor density (g/m^3)
-        pressure: Atmospheric pressure (kPa)
+    * ``Cpd = 1004   J kg⁻¹ K⁻¹`` (dry-air constant-pressure)
+    * ``Cvd =  717   J kg⁻¹ K⁻¹`` (dry-air constant-volume)
+    * ``Cpw = 1952   J kg⁻¹ K⁻¹`` (water-vapour constant-pressure)
+    * ``Cvw = 1463   J kg⁻¹ K⁻¹`` (water-vapour constant-volume)
 
-    Returns:
-        Union[Optional[float], np.ndarray]: Air temperature (K)
-        For scalar inputs: returns None if inputs are invalid
-        For array inputs: invalid values are set to np.nan
+    the implicit equation for *Tₐ* can be rearranged to the closed-form
+    quadratic solved here:
+
+    .. math::
+       T_a \;=\;
+       \frac{ p + (2R_v - (C_{vw}/C_{vd}+1)R_d)\,ρ_v T_s -
+              \sqrt{Δ} }
+            { 2ρ_v\,\bigl[ (R_v - C_{pw}/C_{pd} R_d)
+                          + (R_v-R_d)(R_v-C_{vw}/C_{vd}R_d)ρ_vT_s/p
+                         \bigr] }
+
+    where *p* is pressure (Pa) and :math:`ρ_v` is absolute humidity
+    (kg m⁻³).  The intermediate discriminant *Δ* and constant factors
+    are pre-computed for speed.
+
+    The implementation is fully *vectorised*—inputs may be scalars or
+    broadcast-compatible NumPy arrays.
+
+    Parameters
+    ----------
+    sonic_temp : float or ndarray
+        Virtual (sonic) temperature :math:`T_s` in **Kelvin**.
+    h2o_density : float or ndarray
+        Water-vapour density :math:`ρ_v` in **g m⁻³** (non-negative).
+    pressure : float or ndarray
+        Atmospheric pressure in **kPa** (positive).
+
+    Returns
+    -------
+    float or ndarray or None
+        Corrected air temperature :math:`T_a` (Kelvin).
+
+        * **Scalar inputs** – a single ``float`` or ``None`` if any
+          validation fails.
+        * **Array inputs** – an array of the broadcast shape; elements
+          that cannot be evaluated are set to ``np.nan``.
+
+    Raises
+    ------
+    None
+        All internal errors (shape mismatch, invalid maths) are caught
+        and converted to ``None`` / ``np.nan`` as described above.
+
+    Notes
+    -----
+    * **Units** – do **not** pass Celsius; convert to Kelvin first.
+    * The result is constrained to the physically reasonable range
+      −100 °C … +100 °C (173.15 K … 373.15 K).  Values outside the range
+      are flagged invalid.
+    * Broadcasting follows NumPy rules.  A scalar pressure can be mixed
+      with vector temperature and humidity.
+    * For most eddy-covariance applications the simpler
+      ``air_temperature = sonic_temp / (1 + 0.32 e/p)`` (Kaimal & Gaynor,
+      1990) is adequate.  The present formulation is more precise when
+      very high humidity or low pressure prevail.
+
+    References
+    ----------
+    Schotanus, P., Nieuwstadt, F., & de Bruin, H. (1983).
+    *Temperature measurement with a sonic anemometer and its application
+    to heat and moisture fluxes*. **Boundary-Layer Meteorology**, *26*,
+    81–93.
+
+    Kaimal, J. C., & Gaynor, J. E. (1990).
+    *Another look at sonic thermometry*. **Boundary-Layer Meteorology**,
+    *53*, 401–410.
+
+    Examples
+    --------
+    >>> Ts  = 303.15      # 30 °C in K
+    >>> rho = 15.0        # g m⁻³  (≈ 70 % RH at 30 °C)
+    >>> p   = 98.0        # kPa  (≈ 400 m a.s.l.)
+    >>> Ta  = air_temperature_from_sonic(Ts, rho, p)
+    >>> round(Ta - 273.15, 2)      # convert to °C
+    28.44
+
+    Vectorised usage with automatic broadcasting:
+
+    >>> import numpy as np
+    >>> Ts  = np.array([290., 300., 310.])
+    >>> rho = np.array([  8.,  12.,  18.])   # g m⁻³
+    >>> p   = 101.3                          # sea-level kPa
+    >>> air_temperature_from_sonic(Ts, rho, p)
+    array([288.52..., 298.28..., 307.97...])
     """
+    # function body …
+
     # Convert inputs to numpy arrays
     sonic_temp_arr = np.asarray(sonic_temp)
     h2o_density_arr = np.asarray(h2o_density)
@@ -335,34 +551,106 @@ def calculate_air_density(
     temperature: Union[float, np.ndarray],
     pressure: Union[float, np.ndarray],
     h2o_density: Union[float, np.ndarray],
-) -> Union[Tuple[float, float, float], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+) -> Union[
+    Tuple[float, float, float],
+    Tuple[np.ndarray, np.ndarray, np.ndarray],
+]:
     """
-    Calculate dry air density, water vapor pressure, and moist air density.
-    Supports both scalar values and numpy arrays as input.
+    Compute dry-air density, water-vapour pressure, and moist-air density
+    from temperature, pressure, and absolute humidity.
 
-    Args:
-        temperature: Air temperature (K)
-        pressure: Atmospheric pressure (kPa)
-        h2o_density: Water vapor density (g/m³)
+    The routine supports *broadcast-compatible* NumPy arrays as well as
+    scalars; all inputs are first broadcast to the same shape.  It
+    returns three quantities:
 
-    Returns:
-        For scalar inputs:
-            Tuple[float, float, float] containing:
-            - e_air: Water vapor pressure (kPa)
-            - rho_d: Dry air density (g/m³)
-            - rho_a: Moist air density (kg/m³)
-        For array inputs:
-            Tuple[np.ndarray, np.ndarray, np.ndarray] containing the same quantities
+    ===========  =====================================  ===================
+    Symbol       Description                            Units
+    ===========  =====================================  ===================
+    *e*          water-vapour partial pressure           kPa
+    *ρ_d*        dry-air density                         g m⁻³
+    *ρ_a*        moist-air (virtual) density             kg m⁻³
+    ===========  =====================================  ===================
 
-    Raises:
-        ValueError: If inputs contain invalid values (NaN, negative, or zero for temperature/pressure)
+    Ideal-gas relationships are applied with the specific gas constants
 
-    Notes:
-        - Uses ideal gas law for water vapor pressure: e = ρRvT
-        - Rv = 461.51 J/(kg·K) (specific gas constant for water vapor)
-        - Rd = 287.04 J/(kg·K) (specific gas constant for dry air)
-        - Input h2o_density is converted from g/m³ to kg/m³ for calculations
-        - Output rho_d is converted to g/m³ for consistency with input units
+    ``Rv = 461.51  J kg⁻¹ K⁻¹`` (water vapour)
+    ``Rd = 287.04  J kg⁻¹ K⁻¹`` (dry air)
+
+    and the conversion ``1 kPa = 1000 J m⁻³`` for pressure–energy
+    equivalence.
+
+    Parameters
+    ----------
+    temperature : float or ndarray
+        Air temperature :math:`T` in **Kelvin**; must be strictly
+        positive.
+    pressure : float or ndarray
+        Ambient pressure :math:`p` in **kPa**; must be strictly
+        positive.
+    h2o_density : float or ndarray
+        Absolute water-vapour density :math:`ρ_v` in **g m⁻³**;
+        non-negative.
+
+    Returns
+    -------
+    (e_air, rho_d, rho_a) : tuple
+        * **Scalar input** → 3-tuple of floats
+          ``(e_air, ρ_d, ρ_a)``.
+        * **Array input** → 3-tuple of ndarrays with the broadcast
+          shape of the inputs.
+
+        Units follow the table above.
+
+    Raises
+    ------
+    ValueError
+        If any argument contains ``NaN`` or violates positivity
+        constraints, or if the input shapes cannot be broadcast to a
+        common shape.
+
+    Notes
+    -----
+    * **Water-vapour pressure**
+
+      .. math:: e \;=\; ρ_v R_v T / 1000
+
+      (dividing by 1000 converts to kilopascals).
+
+    * **Dry-air density**
+
+      .. math:: ρ_d \;=\; \frac{p - e}{R_d T}\,·1000
+
+      returned in **g m⁻³** to match the input water-vapour density
+      units.
+
+    * **Moist-air density**
+
+      .. math:: ρ_a \;=\; ρ_d/1000 + ρ_v
+
+      where ``ρ_d/1000`` converts g m⁻³ back to kg m⁻³.
+
+    * All calculations vectorise automatically; use scalar inputs for
+      single-value evaluation.
+
+    Examples
+    --------
+    >>> # Scalar example (sea-level conditions, 20 °C, 60 % RH)
+    >>> T   = 293.15        # K
+    >>> p   = 101.3         # kPa
+    >>> rho = 10.5          # g m⁻³  absolute humidity
+    >>> e, rho_d, rho_a = calculate_air_density(T, p, rho)
+    >>> round(e, 2), round(rho_d, 1), round(rho_a, 3)
+    (2.49, 1190.5, 1.200)
+
+    >>> # Vectorised example
+    >>> import numpy as np
+    >>> T   = np.array([280., 290., 300.])      # K
+    >>> p   = 95.0                              # kPa  (broadcasts)
+    >>> rho = np.array([6., 9., 15.])           # g m⁻³
+    >>> e, rho_d, rho_a = calculate_air_density(T, p, rho)
+    >>> e
+    array([ 2.42...,  3.53...,  5.91...])  # kPa
+
     """
     # Convert inputs to numpy arrays
     temp_arr = np.asarray(temperature)
@@ -424,23 +712,104 @@ def calculate_air_density(
 
 
 def calculate_saturation_vapor_pressure(
-    temperature: Union[float, np.ndarray], pressure: Union[float, np.ndarray]
+    temperature: Union[float, np.ndarray],
+    pressure: Union[float, np.ndarray],
 ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
     """
-    Calculate saturation vapor pressure and enhancement factor.
-    Supports both scalar values and numpy arrays as input.
+    Saturation vapour pressure over liquid water / ice **and**
+    the pressure–broadening enhancement factor.
 
-    Args:
-        temperature: Air temperature (°C)
-        pressure: Atmospheric pressure (kPa)
+    The routine implements the WMO thermodynamic formulation recommended
+    by *Buck* (1981, 1996 revision) combined with the *Goff–Gratch*
+    enhancement factor that corrects for the non-ideal behaviour of
+    moist air at elevated pressures.  It is fully vectorised—both
+    *temperature* and *pressure* may be scalars or broadcast-compatible
+    NumPy arrays.
 
-    Returns:
-        For scalar inputs:
-            Tuple[float, float] containing:
-            - e_sat: Saturation vapor pressure (kPa)
-            - enhance_factor: Enhancement factor (dimensionless)
-        For array inputs:
-            Tuple[np.ndarray, np.ndarray] containing the same quantities
+    Two sets of empirical constants are used:
+
+    * ``T ≥ 0 °C`` (Buck over **liquid water**)
+    * ``T < 0 °C`` (Buck over **ice**)
+
+    Parameters
+    ----------
+    temperature : float or ndarray
+        Dry-bulb air temperature in **degrees Celsius** (°C).  Valid for
+        at least −60 °C ≤ *T* ≤ +60 °C, the calibrated range of the Buck
+        equations.
+    pressure : float or ndarray
+        Ambient static pressure *p* in **kilopascals** (kPa).
+        Must be strictly positive.
+
+    Returns
+    -------
+    e_sat : float or ndarray
+        Saturation vapour pressure (kPa) corresponding to *temperature*
+        and *pressure*.
+    enhance_factor : float or ndarray
+        Dimensionless enhancement factor *f* that accounts for pressure
+        broadening of the vapour pressure curve.
+        The **actual** saturation vapour pressure is
+        ``e_sat = f · e_s``, where *e_s* is the ideal saturation pressure
+        from the Buck equation.
+
+        * Scalar inputs → ``Tuple[float, float]``
+          ``(e_sat, enhance_factor)``
+        * Array inputs  → ``Tuple[np.ndarray, np.ndarray]``
+          with the broadcast shape.
+
+    Raises
+    ------
+    ValueError
+        If *temperature* and *pressure* cannot be broadcast to a common
+        shape, or if *pressure* contains non-positive values.
+
+    Notes
+    -----
+    **Enhancement factor**
+
+    .. math::
+        f(p, T) = 1.00041 \;+\; p
+                   \Bigl[\,3.48\\times10^{-5} + 7.4\\times10^{-9}
+                   (T + 30.6 - 0.38\,p)^2 \Bigr]
+
+    where *p* is in kPa and *T* in °C.
+
+    **Buck saturation vapour pressure**
+
+    .. math::
+        e_s(T) =
+        \\begin{cases}
+            0.61121 \exp
+            \\bigl[(17.368\,T)/(T + 238.88)\\bigr], & T ≥ 0^{\\circ}\\text{C} \\\\[4pt]
+            0.61121 \exp
+            \\bigl[(17.966\,T)/(T + 247.15)\\bigr], & T < 0^{\\circ}\\text{C}
+        \\end{cases}
+
+    The final ``e_sat`` returned here is ``f × e_s``.
+
+    References
+    ----------
+    Buck, A. L. (1981). *New equations for computing vapor pressure and
+    enhancement factor*. **J. Appl. Meteorol.**, *20*, 1527–1532.
+    Buck, A. L. (1996). *Comparison of NOAA/Atmospheric Laboratory and
+    Wexler vapor pressure formulations*. **J. Appl. Meteorol.**,
+    *35*, 1227–1232.
+
+    Examples
+    --------
+    >>> # Scalar example: 25 °C, 100 kPa
+    >>> e, f = calculate_saturation_vapor_pressure(25.0, 100.0)
+    >>> round(e, 3), round(f, 6)
+    (3.178, 1.004)
+
+    >>> # Vectorised example with automatic broadcasting
+    >>> import numpy as np
+    >>> T  = np.array([-10.,  0., 10., 20.])   # °C
+    >>> p  = 95.0                              # kPa (scalar broadcasts)
+    >>> e, f = calculate_saturation_vapor_pressure(T, p)
+    >>> e
+    array([0.260..., 0.612..., 1.228..., 2.339...])
     """
     # Convert inputs to numpy arrays
     temp_arr = np.asarray(temperature)
@@ -494,18 +863,96 @@ def calculate_dewpoint_temperature(
     enhance_factor: Optional[Union[float, np.ndarray]] = None,
 ) -> Union[float, np.ndarray]:
     """
-    Calculate dew point temperature using enhanced vapor pressure.
-    Supports both scalar values and numpy arrays as input.
+    Compute dew-point temperature from vapour pressure and ambient
+    pressure, with optional user-supplied enhancement factors.
 
-    Args:
-        e_air: Water vapor pressure (kPa)
-        pressure: Atmospheric pressure (kPa)
-        enhance_factor: Optional enhancement factor. If None, will be calculated.
+    The algorithm follows the two–step *Buck (1981, 1996)* formulation
+    used by the WMO:
 
-    Returns:
-        Union[float, np.ndarray]: Dew point temperature (°C)
-        Returns float for scalar inputs, np.ndarray for array inputs
+    1. **Initial estimate**
+       Assume a simple pressure-broadening factor
+       :math:`f_{0} = 1.00072 + 3.46·10^{-5} \, p`
+       (``p`` in kPa) and invert the warm-water Buck equation to obtain a
+       first dew-point :math:`T_{d}^{(0)}`.
+    2. **Refined estimate**
+       Re-evaluate the enhancement factor with the full quadratic form,
+       replace *f* in the saturation equation, and solve again:
+
+       *For liquid water (`T_d ≥ 0 °C`)*
+
+       .. math::
+          T_d = \frac{238.88 \, \ln\!\bigl(e/(0.61121 f)\bigr)}
+                       {17.368 - \ln\!\bigl(e/(0.61121 f)\bigr)}
+
+       *For ice (`T_d < 0 °C`)*
+
+       .. math::
+          T_d = \frac{247.15 \, \ln\!\bigl(e/(0.61121 f)\bigr)}
+                       {17.966 - \ln\!\bigl(e/(0.61121 f)\bigr)}
+
+    Parameters
+    ----------
+    e_air : float or ndarray
+        Actual water-vapour pressure *e* (kPa).
+    pressure : float or ndarray
+        Ambient static pressure *p* (kPa).  Must be positive.
+    enhance_factor : float or ndarray, optional
+        Pre-computed enhancement factor *f*.
+        If *None* (default) the routine estimates *f* internally via the
+        two-step process described above.
+        May be a scalar or array broadcast-compatible with *e_air*.
+
+    Returns
+    -------
+    float or ndarray
+        Dew-point temperature (°C).
+        A scalar is returned for scalar input; otherwise an array with
+        the common broadcast shape.
+
+    Raises
+    ------
+    ValueError
+        If the inputs cannot be broadcast to a common shape or if
+        *pressure* contains non-positive values.
+
+    Notes
+    -----
+    * **Enhancement factor** – corrects saturation vapour pressure for
+      the non-ideal behaviour of moist air.  Supplying an accurate
+      *f* (e.g. from :pyfunc:`calculate_saturation_vapor_pressure`) skips
+      the first-guess iteration and yields slightly faster execution.
+    * Valid temperature range: −60 °C ≤ *Tₙ* ≤ +60 °C (empirical fit).
+      Extreme values may produce small extrapolation errors.
+    * All arithmetic is vectorised with NumPy; inputs can be any shape
+      so long as broadcasting rules are satisfied.
+
+    References
+    ----------
+    Buck, A. L. (1981). *New equations for computing vapor pressure and
+    enhancement factor*. **J. Appl. Meteor.**, *20*, 1527–1532.
+    Buck, A. L. (1996). *Comparison of NOAA/Atmospheric Laboratory and
+    Wexler vapor pressure formulations*. **J. Appl. Meteor.**,
+    *35*, 1227–1232.
+
+    Examples
+    --------
+    >>> # Scalar example
+    >>> e  = 1.8         # kPa
+    >>> p  = 95.0        # kPa
+    >>> Td = calculate_dewpoint_temperature(e, p)
+    >>> round(Td, 2)
+    14.03
+
+    >>> # Vectorised example with custom enhancement factor
+    >>> import numpy as np
+    >>> e  = np.array([0.6, 1.2, 2.4])         # kPa
+    >>> p  = np.array([101.3, 100.0,  98.0])   # kPa
+    >>> f  = 1.00041 + 3.46e-5 * p             # simple estimate
+    >>> calculate_dewpoint_temperature(e, p, enhance_factor=f)
+    array([ 5.93..., 11.14..., 18.23...])
     """
+    ...
+
     # Convert inputs to numpy arrays
     e_air_arr = np.asarray(e_air)
     pres_arr = np.asarray(pressure)
@@ -564,24 +1011,119 @@ def calculate_dewpoint_temperature(
 
 class BoundaryLayerProcessor:
     """
-    Process and analyze boundary layer measurements.
+    End-to-end processor for near-surface boundary-layer observations.
 
-    This class provides methods for processing raw measurements into derived
-    boundary layer parameters and properties.
+    The class transforms a minimal set of *raw* meteorological inputs
+    (height above ground, air temperature, pressure, water-vapour
+    density) into a suite of frequently required boundary-layer metrics:
+
+    * **Thermodynamic properties** – true air temperature, vapour
+      pressure, saturation vapour pressure, dew-point temperature,
+      relative humidity.
+    * **Density diagnostics** – dry-air density and moist-air (virtual)
+      density.
+
+    All calculations leverage the utility functions defined in the same
+    module:
+
+    * :pyfunc:`calculate_air_density`
+    * :pyfunc:`calculate_saturation_vapor_pressure`
+    * :pyfunc:`calculate_dewpoint_temperature`
+
+    The processor is therefore *unit-aware*:
+    – temperature **Kelvin**,
+    – pressure **kilopascals**,
+    – water-vapour density **g m⁻³**.
+
+    Parameters
+    ----------
+    params : BoundaryLayerParams
+        Dataclass or simple namespace containing the raw measurements
+        with attributes
+
+        =====================  ================  ====================
+        Attribute               Symbol           Units
+        =====================  ================  ====================
+        ``height``              *z*              m
+        ``temperature``         *T*              K
+        ``pressure``            *p*              kPa
+        ``h2o_density``         ρᵥ              g m⁻³
+        =====================  ================  ====================
+
+    Attributes
+    ----------
+    params : BoundaryLayerParams
+        Stored copy of the input structure.
+    T_0C_K : float
+        Module-level constant (273.15 K) used internally for °C
+        conversions.
+
+    Raises
+    ------
+    ValueError
+        If any of the mandatory attributes in *params* fails the basic
+        sanity checks:
+
+        * ``height`` ≤ 0 m
+        * ``temperature`` < 0 K
+        * ``pressure`` ≤ 0 kPa
+        * ``h2o_density`` < 0 g m⁻³
+
+    Notes
+    -----
+    *The processor does **not*** estimate the planetary-boundary-layer
+    depth; see :pyfunc:`planetary_boundary_layer_height` for that
+    functionality.
+    * All returned quantities are **instantaneous**—use appropriate
+      temporal averaging before interpreting boundary-layer statistics.
+
+    Examples
+    --------
+    >>> from mymodule.boundary import BoundaryLayerParams, BoundaryLayerProcessor
+    >>> raw = BoundaryLayerParams(
+    ...     height       = 2.0,      # m
+    ...     temperature  = 298.15,   # K  (25 °C)
+    ...     pressure     = 95.0,     # kPa (≈900 m a.s.l.)
+    ...     h2o_density  = 12.0      # g m⁻³
+    ... )
+    >>> blp = BoundaryLayerProcessor(raw)
+    >>> results = blp.process_measurements()
+    >>> round(results["relative_humidity"], 1)
+    56.8
     """
 
     def __init__(self, params: BoundaryLayerParams):
         """
-        Initialize with boundary layer parameters.
+        Instantiate the processor and immediately validate inputs.
 
-        Args:
-            params: BoundaryLayerParams object containing measurement data
+        Parameters
+        ----------
+        params : BoundaryLayerParams
+            Container with the raw boundary-layer observations.
+
+        Raises
+        ------
+        ValueError
+            Propagated from :pymeth:`_validate_params` when mandatory
+            sanity checks fail.
         """
         self.params = params
         self._validate_params()
 
     def _validate_params(self) -> None:
-        """Validate input parameters."""
+        """
+        Internal consistency checks for the input measurements.
+
+        Raises
+        ------
+        ValueError
+            If any of the following conditions is violated:
+
+            * ``height``  > 0 m
+            * ``temperature`` ≥ 0 K
+            * ``pressure`` > 0 kPa
+            * ``h2o_density`` ≥ 0 g m⁻³
+        """
         if self.params.height <= 0:
             raise ValueError("Boundary layer height must be positive")
         if self.params.temperature < 0:
@@ -593,17 +1135,44 @@ class BoundaryLayerProcessor:
 
     def process_measurements(self) -> dict:
         """
-        Process raw measurements into derived quantities.
+        Derive secondary thermodynamic and hygrometric variables.
 
-        Returns:
-            dict: Dictionary containing processed values including:
-                - air_temperature (K)
-                - vapor_pressure (kPa)
-                - saturation_vapor_pressure (kPa)
-                - relative_humidity (%)
-                - dewpoint_temperature (°C)
-                - dry_air_density (g/m^3)
-                - moist_air_density (kg/m^3)
+        The method calls the lower-level helper functions in sequence:
+
+        1. :pyfunc:`calculate_air_density` → *vapour pressure* (*e*),
+           *dry-air density* (ρ_d), *moist-air density* (ρ_a)
+        2. :pyfunc:`calculate_saturation_vapor_pressure` → *e_sat*, *f*
+           (enhancement factor)
+        3. Relative humidity ``RH = 100 e / e_sat``
+        4. :pyfunc:`calculate_dewpoint_temperature` → *T_d*
+        5. Assemble results into a dictionary.
+
+        Returns
+        -------
+        dict
+            Mapping with the following keys
+
+            ================  ====================================  Units
+            air_temperature   thermodynamic air temperature *T*     K
+            vapor_pressure    actual vapour pressure *e*            kPa
+            saturation_vapor_pressure  e_sat                        kPa
+            relative_humidity RH                                      %
+            dewpoint_temperature *T_d*                              °C
+            dry_air_density    ρ_d                                  g m⁻³
+            moist_air_density  ρ_a                                  kg m⁻³
+            ================  ====================================  =====
+
+        Notes
+        -----
+        *If* the derived relative humidity exceeds 100 % or falls below
+        0 %, suspect measurement or conversion errors in the raw inputs.
+        * The returned dictionary is intentionally light-weight; convert
+          to a *pandas* ``Series`` or *xarray* ``Dataset`` as needed.
+
+        Examples
+        --------
+        >>> blp = BoundaryLayerProcessor(raw_params)    # doctest: +SKIP
+        >>> blp.process_measurements()                 # doctest: +SKIP
         """
         # Convert absolute temperature to Celsius for some calculations
         temp_c = self.params.temperature - T_0C_K

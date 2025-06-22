@@ -218,38 +218,161 @@ UNIT_CONVERSION = {
 }
 
 
-def get_displacement_height(surface_type: SurfaceType, canopy_height: float) -> float:
+def get_displacement_height(
+    surface_type: SurfaceType,
+    canopy_height: float,
+) -> float:
     """
-    Calculate displacement height based on surface type and canopy height.
+    Estimate the zero-plane displacement height *d* for a vegetated or
+    rough surface.
 
-    Args:
-        surface_type: Type of surface
-        canopy_height: Height of canopy (m)
+    The zero-plane displacement height represents the effective level
+    above ground at which the mean wind speed becomes zero due to drag
+    exerted by the surface elements (e.g., tree crowns, crop stems,
+    buildings).  It is frequently parameterised as a fixed fraction of
+    the canopy or obstacle height :math:`h`:
 
-    Returns:
-        float: Displacement height (m)
+    .. math::
+        d = k_{d}\,h,
+
+    where the proportionality factor :math:`k_{d}` varies by surface
+    type (forest, crop, grass, urban, …).
+
+    Parameters
+    ----------
+    surface_type : SurfaceType
+        Enumerated label describing the roughness class.
+        Must be a key in the module-level dictionary
+        ``DISPLACEMENT_RATIO`` that maps each surface to a dimensionless
+        coefficient :math:`k_{d}`.
+    canopy_height : float
+        Mean height of the vegetation canopy or obstacle layer
+        (*h*, m).  Must be non-negative.
+
+    Returns
+    -------
+    float
+        Displacement height *d* (m).
+
+    Raises
+    ------
+    KeyError
+        If *surface_type* is not present in ``DISPLACEMENT_RATIO``.
+    ValueError
+        If *canopy_height* is negative.
+
+    Notes
+    -----
+    * Typical ratios :math:`k_{d}` are
+      ``0.60–0.70`` for tall forests,
+      ``0.50`` for maize or wheat,
+      ``0.20–0.30`` for short grass,
+      ``0.70–0.80`` for dense urban canopies (Oke, 1987).
+    * The returned *d* is used in logarithmic wind-profile and Monin–
+      Obukhov similarity relationships together with the roughness
+      length *z₀*.
+
+    References
+    ----------
+    Oke, T. R. (1987). *Boundary Layer Climates* (2nd ed.). Routledge.
+    Stull, R. B. (1988). *An Introduction to Boundary Layer Meteorology*.
+    Springer.
+
+    Examples
+    --------
+    >>> from mymodule.roughness import SurfaceType, get_displacement_height
+    >>> get_displacement_height(SurfaceType.FOREST, canopy_height=20.0)
+    13.0   # (k_d = 0.65)
+    >>> get_displacement_height(SurfaceType.GRASS, canopy_height=0.15)
+    0.03   # (k_d = 0.25)
     """
+    if canopy_height < 0:
+        raise ValueError("canopy_height must be non-negative")
+
     return DISPLACEMENT_RATIO[surface_type] * canopy_height
 
 
 def get_roughness_length(
-    surface_type: SurfaceType, canopy_height: float, custom_value: float | None = None
+    surface_type: SurfaceType,
+    canopy_height: float,
+    custom_value: float | None = None,
 ) -> float:
     """
-    Get roughness length for surface type.
+    Retrieve or estimate the aerodynamic roughness length :math:`z_{0}`.
 
-    Args:
-        surface_type: Type of surface
-        canopy_height: Height of canopy (m)
-        custom_value: Optional custom roughness length
+    The roughness length is the theoretical height at which the mean
+    wind speed goes to zero in the logarithmic wind-profile equation.
+    When *custom_value* is supplied the function simply returns it.
+    Otherwise, *z₀* is determined from empirical relationships that
+    depend on the surface class:
 
-    Returns:
-        float: Roughness length (m)
+    * **Cropland, grassland, shrubland**
+      :math:`z_{0} = 0.15\,h`
+    * **Other predefined classes**
+      Value taken from the constant dictionary
+      ``ROUGHNESS_LENGTH``.
+
+    Parameters
+    ----------
+    surface_type : SurfaceType
+        Enumeration identifying the roughness class (e.g.,
+        ``SurfaceType.CROP``).
+        Must be a key in either the *crop/grass/shrub* list or the global
+        mapping ``ROUGHNESS_LENGTH``.
+    canopy_height : float
+        Mean canopy or obstacle height *h* (m).  Used only when the
+        empirical factor *0.15* applies.  Must be non-negative.
+    custom_value : float, optional
+        User-specified roughness length (m).  If provided, it overrides
+        the empirical estimates and table look-ups.
+
+    Returns
+    -------
+    float
+        Aerodynamic roughness length :math:`z_{0}` (m).
+
+    Raises
+    ------
+    KeyError
+        If *surface_type* is not present in ``ROUGHNESS_LENGTH`` and is
+        not one of the crop/grass/shrub classes.
+    ValueError
+        If *canopy_height* is negative.
+
+    Notes
+    -----
+    * The factor *0.15* originates from classical wind-tunnel studies
+      showing that ``z0 ≈ (0.1–0.2)·h`` for many homogeneous vegetation
+      canopies (Stull, 1988).
+    * For tall or very sparse canopies site-specific calibration is
+      recommended; supply *custom_value* to bypass the defaults.
+    * Roughness length is typically paired with the displacement height
+      *d* in Monin–Obukhov similarity theory.  Ensure that both are
+      derived consistently (e.g., *d ≈ 0.65·h* for tall vegetation).
+
+    References
+    ----------
+    Stull, R. B. (1988). *An Introduction to Boundary Layer Meteorology*.
+    Springer.
+
+    Examples
+    --------
+    >>> from mymodule.roughness import SurfaceType, get_roughness_length
+    >>> get_roughness_length(SurfaceType.CROP, canopy_height=2.0)
+    0.3
+    >>> get_roughness_length(SurfaceType.URBAN, canopy_height=10.0)
+    1.0                     # value from ROUGHNESS_LENGTH table
+    >>> get_roughness_length(
+    ...     SurfaceType.FOREST, canopy_height=25.0, custom_value=2.2)
+    2.2
     """
+    if canopy_height < 0:
+        raise ValueError("canopy_height must be non-negative")
+
     if custom_value is not None:
         return custom_value
 
     if surface_type in [SurfaceType.CROP, SurfaceType.GRASS, SurfaceType.SHRUB]:
         return 0.15 * canopy_height
-    else:
-        return ROUGHNESS_LENGTH[surface_type]
+
+    return ROUGHNESS_LENGTH[surface_type]
