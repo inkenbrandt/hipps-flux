@@ -16,8 +16,6 @@ from typing import Tuple, Optional, Union, Dict
 import numpy as np
 from dataclasses import dataclass
 from enum import IntEnum
-import polars as pl
-
 
 
 class QualityFlag(IntEnum):
@@ -593,91 +591,3 @@ def quality_filter(
     filtered = data.copy()
     filtered[quality_flags > min_quality] = np.nan
     return filtered
-
-
-def rolling_sigma_filter(
-    df: pl.DataFrame,
-    value_col: str = "Uz",
-    time_col: str = "TIMESTAMP",
-    period: str = "5s",
-    sigma: float = 3.0,
-    closed: str = "both",           # "both" | "left" | "right" | "none"
-    output_col: str | None = None,  # default: f"{value_col}_filtered"
-    keep_stats: bool = True,        # keep or drop the roll mean/std columns
-    ensure_datetime: bool = True,   # cast time_col to pl.Datetime
-) -> pl.DataFrame:
-    """
-    Apply a rolling ±sigma*std spike filter to `value_col` over a time-indexed window.
-
-    Steps (mirrors your snippet):
-      1) Sort by TIMESTAMP and (optionally) cast to pl.Datetime
-      2) Compute rolling mean & std over a time window (e.g., '5s')
-      3) Join stats back to original rows
-      4) Null-out values outside mean ± sigma*std → write to `output_col`
-
-    Parameters
-    ----------
-    df : pl.DataFrame
-        Input data with at least [time_col, value_col].
-    value_col : str
-        Column to filter (e.g., "Uz").
-    time_col : str
-        Datetime-like column for rolling index (e.g., "TIMESTAMP").
-    period : str
-        Time window (e.g., '5s', '1m', '30m').
-    sigma : float
-        Threshold in standard deviations (e.g., 3.0).
-    closed : str
-        Window inclusion: 'both', 'left', 'right', or 'none'.
-    output_col : str | None
-        Name for filtered output column. Defaults to f"{value_col}_filtered".
-    keep_stats : bool
-        If False, drops the intermediate mean/std columns.
-    ensure_datetime : bool
-        If True, casts `time_col` to pl.Datetime.
-
-    Returns
-    -------
-    pl.DataFrame
-        Original df with:
-          - {value_col}_roll_mean
-          - {value_col}_roll_std
-          - {output_col}  (filtered)
-    """
-    if output_col is None:
-        output_col = f"{value_col}_filtered"
-
-    # Step 1: ensure sort & datetime type
-    out = df.sort(time_col)
-    if ensure_datetime:
-        out = out.with_columns(pl.col(time_col).cast(pl.Datetime))
-
-    # Step 2: rolling mean/std on the chosen column
-    roll = (
-        out.rolling(index_column=time_col, period=period, closed=closed)
-        .agg([
-            pl.col(value_col).mean().alias(f"{value_col}_roll_mean"),
-            pl.col(value_col).std().alias(f"{value_col}_roll_std"),
-        ])
-    )
-
-    # Step 3: join stats back
-    out = out.join(roll, on=time_col, how="left")
-
-    mu = pl.col(f"{value_col}_roll_mean")
-    sd = pl.col(f"{value_col}_roll_std")
-    x  = pl.col(value_col)
-
-    # Step 4: null out spikes beyond ± sigma*std
-    out = out.with_columns(
-        pl.when( (x < mu - sigma * sd) | (x > mu + sigma * sd) )
-          .then(None)
-          .otherwise(x)
-          .alias(output_col)
-    )
-
-    if not keep_stats:
-        out = out.drop([f"{value_col}_roll_mean", f"{value_col}_roll_std"])
-
-    return out
-

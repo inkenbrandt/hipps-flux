@@ -6,7 +6,7 @@ of eddy covariance data collection and processing.
 """
 from typing import Optional, Dict, Any
 
-from easyfluxpy.constants import *
+from .constants import *
 T_0C_K = T_ZERO_C
 
 from .boundary_layer import (

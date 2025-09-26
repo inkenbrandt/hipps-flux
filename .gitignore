@@ -1,2 +1,6 @@
 /easyfluxpy/__pycache__
 /hipps_flux/__pycache__
+*.dat
+TOA5_23861_Time_Series_848_2023_06_05_0916.dat
+/hist.jpg
+sample.parquet

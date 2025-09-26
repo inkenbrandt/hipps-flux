@@ -1,88 +1,10 @@
 # Original scripts in Fortran by Lawrence Hipps USU
 # Transcibed from original Visual Basic scripts by Clayton Lewis and Lawrence Hipps
 
-import polars as pl
-import pandas as pd  # optional compat
+import pandas as pd
 import numpy as np
 from scipy import signal
 import statsmodels.api as sm
-
-# --- Polars compatibility helpers ---
-def _to_pl_df(df):
-    if isinstance(df, pl.DataFrame):
-        return df
-    elif isinstance(df, pd.DataFrame):
-        return pl.from_pandas(df)
-    else:
-        raise TypeError("df must be pandas or polars DataFrame")
-
-def _to_same_type(df_like, df_pl: pl.DataFrame):
-    # Return df_pl as pandas if original was pandas
-    if isinstance(df_like, pd.DataFrame):
-        return df_pl.to_pandas()
-    return df_pl
-
-def _get_series(df, col):
-    if isinstance(df, pl.DataFrame):
-        return df[col]
-    elif isinstance(df, pd.DataFrame):
-        return pl.Series(col, df[col].to_numpy())
-    else:
-        raise TypeError("df must be pandas or polars DataFrame")
-
-def _assign(df, **cols):
-    # cols: name=array-like/Series
-    if isinstance(df, pl.DataFrame):
-        newcols = []
-        for k,v in cols.items():
-            if isinstance(v, pl.Series):
-                s = v
-                if v.name != k: s = v.alias(k)
-            else:
-                s = pl.Series(k, np.asarray(v))
-            newcols.append(s)
-        return df.with_columns(newcols)
-    else:
-        # pandas
-        for k,v in cols.items():
-            df[k] = np.asarray(v)
-        return df
-
-def _interpolate_bfill_ffill(s: pl.Series):
-    if not isinstance(s, pl.Series):
-        s = pl.Series(np.asarray(s))
-    s2 = s.interpolate()
-    s2 = s2.fill_null(strategy="backward")
-    s2 = s2.fill_null(strategy="forward")
-    return s2
-
-def _rolling_median_centered(s: pl.Series, win: int):
-    if not isinstance(s, pl.Series):
-        s = pl.Series(np.asarray(s))
-    out = s.rolling_median(window_size=win, center=True)
-    out = out.fill_null(strategy="backward").fill_null(strategy="forward")
-    return out
-
-def _shift(s, n: int):
-    if isinstance(s, pl.Series):
-        return s.shift(n)
-    else:
-        return pl.Series(np.asarray(s)).shift(n)
-
-def _first_last_index_duration(df, unit="D"):
-    """Mimic (df.last_valid_index() - df.first_valid_index()) / pd.to_timedelta(1, unit=unit)"""
-    if isinstance(df, pd.DataFrame) and df.index.size>0:
-        delta = (df.last_valid_index() - df.first_valid_index())  # type: ignore
-        return delta / pd.to_timedelta(1, unit=unit) # type: ignore
-    # try to infer datetime column
-    cand = None
-    for name in ("TIMESTAMP","timestamp","time","TIMESTAMP_START","datetime"):
-        if name in df.columns:
-            cand = name; break
-    if cand is None:
-        raise ValueError("Cannot infer datetime column for duration; expected one of TIMESTAMP, timestamp, time, TIMESTAMP_START, datetime")
-    s = _get_series(df, cand)
-    return (s[-1] - s[0]).dt.total_days() if unit=="D" else (s[-1] - s[0]).dt.seconds()
 
 
 class CalcFlux:
@@ -354,8 +276,8 @@ class CalcFlux:
                 df[col] = self.despike_quart_filter(df[col])
 
         # Convert Sonic and Air Temperatures from Degrees C to Kelvin
-        df = _assign(df, Ts=self.convert_CtoK(_get_series(df,"Ts").to_numpy())) # type: ignore
-        df = _assign(df, Ta=self.convert_CtoK(_get_series(df,"Ta").to_numpy())) # type: ignore
+        df.loc[:, "Ts"] = self.convert_CtoK(df["Ts"].to_numpy())
+        df.loc[:, "Ta"] = self.convert_CtoK(df["Ta"].to_numpy())
 
         # Remove shadow effects of the CSAT (this is also done by the CSAT Firmware)
         df["Ux"], df["Uy"], df["Uz"] = self.shadow_correction(
@@ -397,9 +319,9 @@ class CalcFlux:
         # the velocity and the other variables
         for ik, iv in velocities.items():
             for jk, jv in covariance_variables.items():
-                self.covar[f"{ik}-{jk}"] = self.calc_max_covariance(iv, jv)[0][1] # type: ignore
+                self.covar[f"{ik}-{jk}"] = self.calc_max_covariance(iv, jv)[0][1]
 
-        self.covar["Ts-Q"] = self.calc_max_covariance(df["Ts"], df["Q"], self.lag)[0][1] # type: ignore
+        self.covar["Ts-Q"] = self.calc_max_covariance(df["Ts"], df["Q"], self.lag)[0][1]
 
         # Traditional Coordinate Rotation
         cosv, sinv, sinTheta, cosTheta, Uxy, Uxyz = self.coord_rotation(df)
@@ -645,8 +567,7 @@ class CalcFlux:
         Examples
         --------
         >>> from ec import CalcFlux
-        >>> import polars as pl
-import pandas as pd  # optional compat
+        >>> import pandas as pd
         >>> raw = pd.read_csv("2025-06-21_1330.csv", index_col=0, parse_dates=True)
         >>> fluxcalc = CalcFlux(meter_type="IRGASON", UHeight=3.5)
         >>> period_fluxes = fluxcalc.run_irga(raw)
@@ -661,7 +582,7 @@ import pandas as pd  # optional compat
 
         # Convert Sonic and Air Temperatures from Degrees C to Kelvin
         df.loc[:, "Ts"] = self.convert_CtoK(df["Ts_ro"].to_numpy())
-        df = _assign(df, Ta=self.convert_CtoK(_get_series(df,"Ta").to_numpy()))
+        df.loc[:, "Ta"] = self.convert_CtoK(df["Ta"].to_numpy())
 
         # Remove shadow effects of the CSAT (this is also done by the CSAT Firmware)
         df["Ux"], df["Uy"], df["Uz"] = self.shadow_correction(
@@ -696,30 +617,63 @@ import pandas as pd  # optional compat
 
         # Calculate max variance to close separation between sensors
         velocities = {
-            "Ux": _interpolate_bfill_ffill(_get_series(df, "Ux"))
+            "Ux": df["Ux"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Uy": _interpolate_bfill_ffill(_get_series(df, "Uy"))
+            "Uy": df["Uy"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Uz": _interpolate_bfill_ffill(_get_series(df, "Uz"))
+            "Uz": df["Uz"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
         }
 
         covariance_variables = {
-            "Ux": _interpolate_bfill_ffill(_get_series(df, "Ux"))
+            "Ux": df["Ux"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Uy": _interpolate_bfill_ffill(_get_series(df, "Uy"))
+            "Uy": df["Uy"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Uz": _interpolate_bfill_ffill(_get_series(df, "Uz"))
+            "Uz": df["Uz"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Ts": _interpolate_bfill_ffill(_get_series(df, "Ts"))
+            "Ts": df["Ts"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Tsa": _interpolate_bfill_ffill(_get_series(df, "Tsa"))
+            "Tsa": df["Tsa"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "pV": _interpolate_bfill_ffill(_get_series(df, "pV"))
+            "pV": df["pV"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Q": _interpolate_bfill_ffill(_get_series(df, "Q"))
+            "Q": df["Q"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
-            "Sd": _interpolate_bfill_ffill(_get_series(df, "Sd"))
+            "Sd": df["Sd"]
+            .interpolate()
+            .fillna(method="bfill")
+            .fillna(method="ffill")
             .to_numpy(),
         }
 
@@ -735,10 +689,10 @@ import pandas as pd  # optional compat
 
         try:
             self.covar["Ts-Q"] = self.calc_max_covariance(
-                _interpolate_bfill_ffill(_get_series(df, "Ts")),
-                _interpolate_bfill_ffill(_get_series(df, "Q")),
+                df["Ts"].interpolate().fillna(method="bfill").fillna(method="ffill"),
+                df["Q"].interpolate().fillna(method="bfill").fillna(method="ffill"),
                 self.lag,
-            )[0][1] # type: ignore
+            )[0][1]
         except IndexError:
             self.covar["Ts-Q"] = self.calc_cov(iv, jv)
 
@@ -1307,8 +1261,7 @@ import pandas as pd  # optional compat
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat
+        >>> import pandas as pd
         >>> raw = pd.DataFrame(
         ...     {"TIMESTAMP": ["2025-06-21 13:30:00.0"],
         ...      "T_SONIC": [23.4], "amb_press": [92.1], "H2O_density": [0.012]},
@@ -1446,8 +1399,7 @@ import pandas as pd  # optional compat
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat, numpy as np
+        >>> import pandas as pd, numpy as np
         >>> from ec import CalcFlux
         >>> ts = pd.Series([1, 1.2, 0.9, 5.5, 1.1, 1.0])  # 5.5 is a spike
         >>> calc = CalcFlux()
@@ -1526,8 +1478,7 @@ import pandas as pd  # optional compat, numpy as np
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat, numpy as np
+        >>> import pandas as pd, numpy as np
         >>> from ec import CalcFlux
         >>> idx = pd.date_range("2025-06-21 13:30", periods=4000, freq="50L")
         >>> s = pd.Series(np.sin(np.linspace(0, 20, 4000)), index=idx)
@@ -1541,7 +1492,7 @@ import pandas as pd  # optional compat, numpy as np
         np_spikey = np.array(df_column)
 
         y = df_column.interpolate().bfill().ffill()
-        x = _rolling_median_centered(df_column, win)
+        x = df_column.rolling(window=win, center=True).median().bfill().ffill()
 
         X = sm.add_constant(x)
         mod_rlm = sm.RLM(y, X)
@@ -1629,8 +1580,7 @@ import pandas as pd  # optional compat, numpy as np
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat, numpy as np
+        >>> import pandas as pd, numpy as np
         >>> from ec import CalcFlux
         >>> idx = pd.date_range("2025-06-21 13:30", periods=1200, freq="50L")
         >>> s = pd.Series(np.sin(np.linspace(0, 6*np.pi, 1200)), index=idx)
@@ -3238,8 +3188,7 @@ import pandas as pd  # optional compat, numpy as np
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat
+        >>> import pandas as pd
         >>> from ec import CalcFlux
         >>> calc = CalcFlux()
         >>> df = pd.DataFrame({
@@ -3310,8 +3259,7 @@ import pandas as pd  # optional compat
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat
+        >>> import pandas as pd
         >>> from ec import CalcFlux
         >>> calc = CalcFlux()
         >>> df = pd.DataFrame({
@@ -3617,8 +3565,7 @@ import pandas as pd  # optional compat
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat, numpy as np
+        >>> import pandas as pd, numpy as np
         >>> rng = np.random.default_rng(0)
         >>> n = 5000
         >>> df = pd.DataFrame({
@@ -3721,8 +3668,7 @@ import pandas as pd  # optional compat, numpy as np
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat, numpy as np
+        >>> import pandas as pd, numpy as np
         >>> rng = np.random.default_rng(1)
         >>> df = pd.DataFrame({
         ...     "Ux": rng.normal(2.0, 0.5, 10000),
@@ -3813,8 +3759,7 @@ import pandas as pd  # optional compat, numpy as np
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat, numpy as np
+        >>> import pandas as pd, numpy as np
         >>> from ec import CalcFlux
         >>> rng = np.random.default_rng(2)
         >>> df = pd.DataFrame({
@@ -3962,8 +3907,7 @@ import pandas as pd  # optional compat, numpy as np
 
         Examples
         --------
-        >>> import polars as pl
-import pandas as pd  # optional compat
+        >>> import pandas as pd
         >>> from ec import CalcFlux
         >>> idx = pd.date_range("2025-06-21 13:30", periods=36000, freq="100L")  # 1 h @ 10 Hz
         >>> df = pd.DataFrame({"Ux": 0.0}, index=idx)

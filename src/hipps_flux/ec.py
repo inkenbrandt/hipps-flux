@@ -7,7 +7,7 @@ from scipy import signal
 import statsmodels.api as sm
 
 
-class CalcFlux:
+class CalcFluxPandas:
     # … class-level attributes & docstring remain unchanged …
 
     def __init__(self, **kwargs):
@@ -319,9 +319,9 @@ class CalcFlux:
         # the velocity and the other variables
         for ik, iv in velocities.items():
             for jk, jv in covariance_variables.items():
-                self.covar[f"{ik}-{jk}"] = self.calc_max_covariance(iv, jv)[0][1]
+                self.covar[f"{ik}-{jk}"] = self.calc_max_covariance(iv, jv)[0][1] # type: ignore
 
-        self.covar["Ts-Q"] = self.calc_max_covariance(df["Ts"], df["Q"], self.lag)[0][1]
+        self.covar["Ts-Q"] = self.calc_max_covariance(df["Ts"], df["Q"], self.lag)[0][1] # type: ignore
 
         # Traditional Coordinate Rotation
         cosv, sinv, sinTheta, cosTheta, Uxy, Uxyz = self.coord_rotation(df)
@@ -329,10 +329,10 @@ class CalcFlux:
         df = self.rotate_velocity_values(df, "Ux", "Uy", "Uz")
 
         # Find the Mean Squared Error of Velocity Components and Humidity
-        self.UxMSE = self.calc_MSE(df["Ux"])
-        self.UyMSE = self.calc_MSE(df["Uy"])
-        self.UzMSE = self.calc_MSE(df["Uz"])
-        self.QMSE = self.calc_MSE(df["Q"])
+        self.UxMSE = self.calc_MSE(df["Ux"]) # type: ignore
+        self.UyMSE = self.calc_MSE(df["Uy"]) # type: ignore
+        self.UzMSE = self.calc_MSE(df["Uz"]) # type: ignore
+        self.QMSE = self.calc_MSE(df["Q"]) # type: ignore
 
         # Correct Covariances for Coordinate Rotation
         self.covar_coord_rot_correction(cosv, sinv, sinTheta, cosTheta)
@@ -340,7 +340,7 @@ class CalcFlux:
         Ustr = np.sqrt(self.covar["Uxy-Uz"])
 
         # Find Average Air Temperature From Average Sonic Temperature
-        Tsa = self.calc_Tsa(df["Ts"].mean(), df["Pr"].mean(), df["pV"].mean())
+        Tsa = self.calc_Tsa(df["Ts"].mean(), df["Pr"].mean(), df["pV"].mean()) # type: ignore
 
         # Calculate the Latent Heat of Vaporization (eq. 2.57 in Foken)
         lamb = 2500800 - 2366.8 * (self.convert_KtoC(Tsa))
@@ -376,7 +376,7 @@ class CalcFlux:
         Uy_avg = np.mean(df["Uy"].to_numpy())
         Uz_avg = np.mean(df["Uz"].to_numpy())
 
-        pathlen, direction = self.determine_wind_dir(Ux_avg, Uy_avg)
+        pathlen, direction = self.determine_wind_dir(Ux_avg, Uy_avg) # type: ignore
 
         # Calculate the Average and Standard Deviations of the Rotated Velocity Components
         StDevUz = df["Uz"].std()
@@ -397,7 +397,7 @@ class CalcFlux:
         _Ts = 2 * np.pi * fX * tauETs
         _KH20 = 2 * np.pi * fX * tauEKH20
         Ts = self.correct_spectral(B, alpha, _Ts)
-        self.covar["Uxy_Uz"] /= self.correct_spectral(B, alpha, momentum)
+        self.covar["Uxy_Uz"] /= self.correct_spectral(B, alpha, momentum) # type: ignore
         Ustr = np.sqrt(self.covar["Uxy_Uz"])
 
         # Recalculate L With New Uᕽ and Uz_Ta, and Calculate High Frequency Corrections
@@ -408,14 +408,14 @@ class CalcFlux:
 
         # Correct the Covariance Values
         Uz_Ta /= Ts
-        self.covar["Uz-pV"] /= KH20
-        self.covar["Uxy_Uz"] /= self.correct_spectral(B, alpha, momentum)
+        self.covar["Uz-pV"] /= KH20 # type: ignore
+        self.covar["Uxy_Uz"] /= self.correct_spectral(B, alpha, momentum) # type: ignore
         Ustr = np.sqrt(self.covar["Uxy_Uz"])
-        self.covar["Uz_Sd"] /= KH20
+        self.covar["Uz_Sd"] /= KH20 # type: ignore
         exchange = ((self.p * self.Cp) / (S + self.Cp / lamb)) * self.covar["Uz_Sd"]
 
         # KH20 Oxygen Correction
-        self.covar["Uz-pV"] += self.correct_KH20(Uz_Ta, df["Pr"].mean(), Tsa)
+        self.covar["Uz-pV"] += self.correct_KH20(Uz_Ta, df["Pr"].mean(), Tsa) # type: ignore
 
         # Calculate New H and LE Values
         H = self.p * self.Cp * Uz_Ta
@@ -424,7 +424,7 @@ class CalcFlux:
         # Webb, Pearman and Leuning Correction
         pVavg = np.mean(df["pV"].to_numpy())
         lambdaE = self.webb_pearman_leuning(
-            lamb, Tsa, pVavg, Uz_Ta, self.covar["Uz-pV"]
+            lamb, Tsa, pVavg, Uz_Ta, self.covar["Uz-pV"] # type: ignore
         )
 
         # Finish Output
@@ -433,8 +433,8 @@ class CalcFlux:
         zeta = self.UHeight / L
         ET = lambdaE * self.get_Watts_to_H2O_conversion_factor(
             Tsa,
-            (df.last_valid_index() - df.first_valid_index())
-            / pd.to_timedelta(1, unit="D"),
+            (df.last_valid_index() - df.first_valid_index()) # type: ignore
+            / pd.to_timedelta(1, unit="D"), # type: ignore
         )
         # Out.Parameters = CWP
         self.columns = [
@@ -597,13 +597,13 @@ class CalcFlux:
         # convert pV to g/m-3
         df["pV"] = df["pV_ro"] * 0.001
 
-        df["E"] = self.calc_E(df["pV"], df["Ts"])
+        df["E"] = self.calc_E(df["pV"], df["Ts"]) # type: ignore
         # convert air pressure from kPa to Pa
-        df["Q"] = self.calc_Q(df["Pr"], df["E"])
-        df["Tsa"] = self.calc_Tsa(df["Ts"], df["Q"])
+        df["Q"] = self.calc_Q(df["Pr"], df["E"]) # type: ignore
+        df["Tsa"] = self.calc_Tsa(df["Ts"], df["Q"]) # type: ignore
         # df['Tsa2'] = self.calc_tc_air_temp_sonic(df['Ts'], df['pV'], df['Pr'])
-        df["Es"] = self.calc_Es(df["Tsa"])
-        df["Sd"] = self.calc_Q(df["Pr"], self.calc_Es(df["Tsa"])) - df["Q"]
+        df["Es"] = self.calc_Es(df["Tsa"]) # type: ignore
+        df["Sd"] = self.calc_Q(df["Pr"], self.calc_Es(df["Tsa"])) - df["Q"] # type: ignore
 
         # Calculate Covariances (Maximum Furthest From Zero With Sign in Lag Period)
         self.calc_covar(
